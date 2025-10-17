@@ -14,16 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      base_oficial: {
+        Row: {
+          cidade: string
+          cpf_censurado: string
+          cpf_hash: string
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          setor: string
+        }
+        Insert: {
+          cidade: string
+          cpf_censurado: string
+          cpf_hash: string
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          setor: string
+        }
+        Update: {
+          cidade?: string
+          cpf_censurado?: string
+          cpf_hash?: string
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          setor?: string
+        }
+        Relationships: []
+      }
+      formulario_config: {
+        Row: {
+          aberto: boolean
+          data_abertura: string | null
+          data_fechamento: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          aberto?: boolean
+          data_abertura?: string | null
+          data_fechamento?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          aberto?: boolean
+          data_abertura?: string | null
+          data_fechamento?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      participantes: {
+        Row: {
+          cidade: string
+          cpf_censurado: string
+          cpf_hash: string
+          created_at: string
+          email: string
+          id: string
+          ip: string | null
+          nome: string
+          setor: string
+        }
+        Insert: {
+          cidade: string
+          cpf_censurado: string
+          cpf_hash: string
+          created_at?: string
+          email: string
+          id?: string
+          ip?: string | null
+          nome: string
+          setor: string
+        }
+        Update: {
+          cidade?: string
+          cpf_censurado?: string
+          cpf_hash?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip?: string | null
+          nome?: string
+          setor?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      sistema_config: {
+        Row: {
+          id: string
+          senha_criptografia_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          senha_criptografia_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          senha_criptografia_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sorteados: {
+        Row: {
+          cidade: string
+          id: string
+          nome: string
+          participante_id: string | null
+          setor: string
+          sorteado_em: string
+          sorteado_por: string | null
+        }
+        Insert: {
+          cidade: string
+          id?: string
+          nome: string
+          participante_id?: string | null
+          setor: string
+          sorteado_em?: string
+          sorteado_por?: string | null
+        }
+        Update: {
+          cidade?: string
+          id?: string
+          nome?: string
+          participante_id?: string | null
+          setor?: string
+          sorteado_em?: string
+          sorteado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sorteados_participante_id_fkey"
+            columns: ["participante_id"]
+            isOneToOne: false
+            referencedRelation: "participantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sorteados_sorteado_por_fkey"
+            columns: ["sorteado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +358,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator"],
+    },
   },
 } as const

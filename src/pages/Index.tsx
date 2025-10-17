@@ -50,6 +50,7 @@ const Index = () => {
           size="sm"
           className="gap-2 text-muted-foreground hover:text-foreground"
           title="Acesso restrito à equipe"
+          onClick={() => window.location.href = '/auth'}
         >
           <KeyRound className="h-4 w-4" />
           <span className="hidden sm:inline">Login</span>
