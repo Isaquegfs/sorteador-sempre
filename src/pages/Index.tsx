@@ -48,7 +48,7 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      const cpfHash = hashCPF(formData.cpf);
+      const cpfHash = await hashCPF(formData.cpf);
       const cpfCensurado = censorCPF(formData.cpf);
 
       // Verificar se o CPF existe na base oficial

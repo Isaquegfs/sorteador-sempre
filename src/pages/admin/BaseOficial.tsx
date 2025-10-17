@@ -77,7 +77,7 @@ const BaseOficial = () => {
       // Ignorar cabeçalho
       const dataLines = lines.slice(1);
       
-      const records = dataLines.map(line => {
+      const records = await Promise.all(dataLines.map(async line => {
         const [nome, cpf, cidade, setor, email] = line.split(',').map(field => field.trim());
         
         if (!validateCPF(cpf)) {
@@ -86,13 +86,13 @@ const BaseOficial = () => {
 
         return {
           nome,
-          cpf_hash: hashCPF(cpf),
+          cpf_hash: await hashCPF(cpf),
           cpf_censurado: censorCPF(cpf),
           cidade,
           setor,
           email,
         };
-      });
+      }));
 
       const { error } = await supabase
         .from('base_oficial')

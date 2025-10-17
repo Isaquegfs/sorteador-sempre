@@ -1,5 +1,3 @@
-import { createHash } from 'crypto';
-
 export const formatCPF = (value: string): string => {
   const numbers = value.replace(/\D/g, '');
   return numbers
@@ -18,9 +16,14 @@ export const censorCPF = (cpf: string): string => {
 // Alias para compatibilidade
 export const censurarCPF = censorCPF;
 
-export const hashCPF = (cpf: string): string => {
+export const hashCPF = async (cpf: string): Promise<string> => {
   const numbers = cpf.replace(/\D/g, '');
-  return createHash('sha256').update(numbers).digest('hex');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(numbers);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
 };
 
 export const validateCPF = (cpf: string): boolean => {
