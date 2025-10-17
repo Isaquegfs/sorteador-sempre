@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { formatCPF, censorCPF, hashCPF, validateCPF } from "@/lib/cpf";
 import logo from "@/assets/logo-sempre.png";
 
 const Index = () => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -16,29 +20,123 @@ const Index = () => {
     cpf: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    checkFormStatus();
+  }, []);
+
+  const checkFormStatus = async () => {
+    const { data } = await supabase
+      .from('formulario_config')
+      .select('aberto')
+      .single();
+    
+    setIsFormOpen(data?.aberto || false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // TODO: Validate CPF against database
-    toast({
-      title: "Cadastro efetuado com sucesso!",
-      description: "Boa sorte!",
-    });
+    if (!validateCPF(formData.cpf)) {
+      toast({
+        title: "CPF inválido",
+        description: "Por favor, digite um CPF válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
     
-    setFormData({
-      nome: "",
-      email: "",
-      setor: "",
-      cidade: "",
-      cpf: "",
-    });
+    try {
+      const cpfHash = hashCPF(formData.cpf);
+      const cpfCensurado = censorCPF(formData.cpf);
+
+      // Verificar se o CPF existe na base oficial
+      const { data: baseOficial } = await supabase
+        .from('base_oficial')
+        .select('cpf_hash')
+        .eq('cpf_hash', cpfHash)
+        .single();
+
+      if (!baseOficial) {
+        toast({
+          title: "CPF não encontrado",
+          description: "Este CPF não está na base de colaboradores elegíveis.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar se já está cadastrado
+      const { data: existing } = await supabase
+        .from('participantes')
+        .select('id')
+        .eq('cpf_hash', cpfHash)
+        .single();
+
+      if (existing) {
+        toast({
+          title: "Já cadastrado",
+          description: "Este CPF já está participando do sorteio.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Inserir participante
+      const { error } = await supabase
+        .from('participantes')
+        .insert({
+          nome: formData.nome,
+          email: formData.email,
+          setor: formData.setor,
+          cidade: formData.cidade,
+          cpf_hash: cpfHash,
+          cpf_censurado: cpfCensurado,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Cadastro efetuado com sucesso!",
+        description: "Boa sorte no sorteio!",
+      });
+      
+      setFormData({
+        nome: "",
+        email: "",
+        setor: "",
+        cidade: "",
+        cpf: "",
+      });
+    } catch (error) {
+      console.error('Erro ao cadastrar:', error);
+      toast({
+        title: "Erro ao cadastrar",
+        description: "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    
+    if (name === 'cpf') {
+      setFormData({
+        ...formData,
+        cpf: formatCPF(value),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   return (
@@ -75,12 +173,15 @@ const Index = () => {
               Sistema de Sorteio Sempre Internet
             </h1>
             <p className="text-muted-foreground">
-              Realize o seu cadastro abaixo para participar do sorteio.
+              {isFormOpen 
+                ? "Realize o seu cadastro abaixo para participar do sorteio."
+                : "O formulário está fechado no momento."}
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {isFormOpen ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
@@ -149,11 +250,26 @@ const Index = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full"
+              disabled={isLoading}
             >
-              Cadastrar
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cadastrando...
+                </>
+              ) : (
+                "Cadastrar"
+              )}
             </Button>
           </form>
+          ) : (
+            <div className="text-center p-8 border rounded-lg bg-muted/50">
+              <p className="text-muted-foreground">
+                As inscrições estão encerradas no momento.
+              </p>
+            </div>
+          )}
         </div>
       </main>
 

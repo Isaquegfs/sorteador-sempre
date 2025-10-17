@@ -1,4 +1,4 @@
-import { Home, Shuffle, Users, Database, FileText, Settings, Info, UserCog } from 'lucide-react';
+import { Home, Sparkles, Users, Database, Settings } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -17,15 +17,10 @@ export function AdminSidebar() {
   const { isAdmin } = useAuth();
 
   const menuItems = [
-    { title: 'Início', url: '/admin', icon: Home },
-    { title: 'Sorteador', url: '/admin/sorteador', icon: Shuffle },
-    { title: 'Cadastros', url: '/admin/cadastros', icon: Users },
-    { title: 'Cadastro Base', url: '/admin/base', icon: Database },
-    { title: 'Logs', url: '/admin/logs', icon: FileText },
-  ];
-
-  const adminItems = [
-    { title: 'Gerenciar Usuários', url: '/admin/usuarios', icon: UserCog },
+    { title: 'Dashboard', url: '/admin', icon: Home },
+    { title: 'Participantes', url: '/admin/participantes', icon: Users },
+    { title: 'Base Oficial', url: '/admin/base-oficial', icon: Database },
+    { title: 'Sorteio', url: '/admin/sorteio', icon: Sparkles },
     { title: 'Configurações', url: '/admin/configuracoes', icon: Settings },
   ];
 
@@ -55,41 +50,6 @@ export function AdminSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administração</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.url} className={getNavClasses}>
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/admin/sobre" className={getNavClasses}>
-                    <Info className="mr-2 h-4 w-4" />
-                    <span>Sobre</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

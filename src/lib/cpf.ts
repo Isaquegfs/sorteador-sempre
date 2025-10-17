@@ -9,18 +9,21 @@ export const formatCPF = (value: string): string => {
     .substring(0, 14);
 };
 
-export const censurarCPF = (cpf: string): string => {
+export const censorCPF = (cpf: string): string => {
   const numbers = cpf.replace(/\D/g, '');
   if (numbers.length !== 11) return cpf;
   return `${numbers.substring(0, 3)}.***.***-${numbers.substring(9, 11)}`;
 };
+
+// Alias para compatibilidade
+export const censurarCPF = censorCPF;
 
 export const hashCPF = (cpf: string): string => {
   const numbers = cpf.replace(/\D/g, '');
   return createHash('sha256').update(numbers).digest('hex');
 };
 
-export const validarCPF = (cpf: string): boolean => {
+export const validateCPF = (cpf: string): boolean => {
   const numbers = cpf.replace(/\D/g, '');
   
   if (numbers.length !== 11) return false;
@@ -44,3 +47,6 @@ export const validarCPF = (cpf: string): boolean => {
 
   return true;
 };
+
+// Alias para compatibilidade
+export const validarCPF = validateCPF;
