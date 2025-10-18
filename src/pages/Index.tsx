@@ -170,7 +170,7 @@ const Index = () => {
           {/* Title */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-foreground">
-              Sistema de Sorteio Sempre Internet
+              Sorteios Sempre Internet
             </h1>
             <p className="text-muted-foreground">
               {isFormOpen 
@@ -275,7 +275,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="w-full py-6 text-center text-sm text-muted-foreground border-t">
-        Sistema de Sorteio Sempre Internet
+        Sorteios Sempre Internet
       </footer>
     </div>
   );
