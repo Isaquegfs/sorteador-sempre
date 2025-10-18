@@ -39,21 +39,26 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Liquid Glass Orange */
+    --glass-orange-light: 17 100% 65%; /* #FF8C42 */
+    --glass-orange: 17 89% 58%; /* #F27435 */
+    --glass-orange-deep: 17 85% 50%; /* #E65C1F */
+    
+    /* Sidebar - Liquid Glass Style */
+    --sidebar-background: 0 0% 100%; /* White solid */
+    --sidebar-foreground: 0 0% 0%; /* Black text */
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 17 89% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 17 89% 58%;
+    
+    /* Gradients & Effects */
+    --gradient-glass: linear-gradient(135deg, hsl(17 100% 65% / 0.25), hsl(17 85% 50% / 0.5));
+    --shadow-glass: 0 8px 32px 0 hsl(17 89% 58% / 0.15);
+    --shadow-glass-hover: 0 12px 40px 0 hsl(17 89% 58% / 0.25);
+    --glow-orange: 0 0 20px hsl(17 89% 58% / 0.4);
   }
 
   .dark {
@@ -84,14 +89,25 @@ All colors MUST be HSL.
     --border: 240 6% 20%;
     --input: 240 6% 20%;
     --ring: 246 38% 60%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
+    
+    /* Liquid Glass Orange - Dark Mode */
+    --glass-orange-light: 17 100% 70%;
+    --glass-orange: 17 89% 58%;
+    --glass-orange-deep: 17 85% 50%;
+    
+    --sidebar-background: 240 8% 12%;
+    --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-accent: 17 89% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 17 89% 58%;
+    
+    --gradient-glass: linear-gradient(135deg, hsl(17 100% 70% / 0.3), hsl(17 85% 50% / 0.6));
+    --shadow-glass: 0 8px 32px 0 hsl(17 89% 58% / 0.2);
+    --shadow-glass-hover: 0 12px 40px 0 hsl(17 89% 58% / 0.35);
+    --glow-orange: 0 0 20px hsl(17 89% 58% / 0.5);
   }
 }
 

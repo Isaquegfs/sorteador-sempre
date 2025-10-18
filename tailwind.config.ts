@@ -57,6 +57,21 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        glass: {
+          orange: {
+            light: "hsl(var(--glass-orange-light))",
+            DEFAULT: "hsl(var(--glass-orange))",
+            deep: "hsl(var(--glass-orange-deep))",
+          },
+        },
+      },
+      backgroundImage: {
+        "gradient-glass": "var(--gradient-glass)",
+      },
+      boxShadow: {
+        glass: "var(--shadow-glass)",
+        "glass-hover": "var(--shadow-glass-hover)",
+        glow: "var(--glow-orange)",
       },
       borderRadius: {
         lg: "var(--radius)",
