@@ -73,6 +73,9 @@ export default {
         "glass-hover": "var(--shadow-glass-hover)",
         glow: "var(--glow-orange)",
       },
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

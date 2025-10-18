@@ -25,35 +25,37 @@ export function AdminSidebar() {
   ];
 
   const getNavClasses = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? 'relative bg-gradient-glass text-sidebar-accent-foreground font-medium shadow-glass backdrop-blur-sm border border-glass-orange/20 transition-all duration-300' 
-      : 'hover:bg-gradient-glass hover:backdrop-blur-sm hover:shadow-glass hover:border hover:border-glass-orange/20 transition-all duration-300';
+    `
+      relative flex items-center px-3 py-2.5 rounded-lg text-sidebar-foreground font-medium
+      transition-all duration-300 ease-in-out
+      ${isActive 
+        ? 'bg-transparent' 
+        : 'bg-transparent hover:bg-glass-orange/10 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(242,116,53,0.15)] hover:border hover:border-glass-orange/30'
+      }
+    `.trim();
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar">
-      <div className="p-4 border-b border-sidebar-border">
-        <img src={logo} alt="Sempre Internet" className="h-12 w-auto mx-auto" />
+      <div className="p-6 border-b border-sidebar-border">
+        <img src={logo} alt="Sempre Internet" className="h-10 w-auto mx-auto" />
       </div>
 
-      <SidebarContent>
+      <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground font-semibold">
+          <SidebarGroupLabel className="px-3 text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="w-full">
                     <NavLink 
                       to={item.url} 
                       className={getNavClasses}
-                      style={{
-                        WebkitBackdropFilter: 'blur(10px)',
-                      }}
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5 mr-3" />
+                      <span className="text-sm">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
