@@ -4,7 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import {
   Table,
   TableBody,
@@ -55,14 +56,70 @@ const BaseOficial = () => {
     }
   };
 
+  const parseCSV = async (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const dataLines = lines.slice(1); // Ignorar cabeçalho
+    
+    return await Promise.all(dataLines.map(async line => {
+      const [nome, cpf, cidade, setor, email] = line.split(',').map(field => field.trim());
+      
+      if (!validateCPF(cpf)) {
+        throw new Error(`CPF inválido: ${cpf}`);
+      }
+
+      return {
+        nome,
+        cpf_hash: await hashCPF(cpf),
+        cpf_censurado: censorCPF(cpf),
+        cidade,
+        setor,
+        email,
+      };
+    }));
+  };
+
+  const parseXLSX = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer);
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const data = XLSX.utils.sheet_to_json<{
+      nome: string;
+      cpf: string;
+      cidade: string;
+      setor: string;
+      email: string;
+    }>(worksheet);
+
+    return await Promise.all(data.map(async row => {
+      const cpf = row.cpf?.toString().trim();
+      
+      if (!cpf || !validateCPF(cpf)) {
+        throw new Error(`CPF inválido: ${cpf || 'vazio'}`);
+      }
+
+      return {
+        nome: row.nome?.toString().trim() || '',
+        cpf_hash: await hashCPF(cpf),
+        cpf_censurado: censorCPF(cpf),
+        cidade: row.cidade?.toString().trim() || '',
+        setor: row.setor?.toString().trim() || '',
+        email: row.email?.toString().trim() || '',
+      };
+    }));
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.csv')) {
+    const isCSV = file.name.endsWith('.csv');
+    const isXLSX = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+    if (!isCSV && !isXLSX) {
       toast({
         title: 'Formato inválido',
-        description: 'Por favor, envie um arquivo CSV.',
+        description: 'Por favor, envie um arquivo CSV ou XLSX.',
         variant: 'destructive',
       });
       return;
@@ -71,28 +128,14 @@ const BaseOficial = () => {
     setIsUploading(true);
 
     try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      // Ignorar cabeçalho
-      const dataLines = lines.slice(1);
-      
-      const records = await Promise.all(dataLines.map(async line => {
-        const [nome, cpf, cidade, setor, email] = line.split(',').map(field => field.trim());
-        
-        if (!validateCPF(cpf)) {
-          throw new Error(`CPF inválido: ${cpf}`);
-        }
+      let records;
 
-        return {
-          nome,
-          cpf_hash: await hashCPF(cpf),
-          cpf_censurado: censorCPF(cpf),
-          cidade,
-          setor,
-          email,
-        };
-      }));
+      if (isCSV) {
+        const text = await file.text();
+        records = await parseCSV(text);
+      } else {
+        records = await parseXLSX(file);
+      }
 
       const { error } = await supabase
         .from('base_oficial')
@@ -138,7 +181,7 @@ const BaseOficial = () => {
         </div>
         
         <div>
-          <Label htmlFor="csv-upload" className="cursor-pointer">
+          <Label htmlFor="file-upload" className="cursor-pointer">
             <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
               {isUploading ? (
                 <>
@@ -147,16 +190,16 @@ const BaseOficial = () => {
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4" />
-                  Importar CSV
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Importar CSV/XLSX
                 </>
               )}
             </div>
           </Label>
           <Input
-            id="csv-upload"
+            id="file-upload"
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={handleFileUpload}
             disabled={isUploading}
@@ -165,13 +208,22 @@ const BaseOficial = () => {
       </div>
 
       <div className="border rounded-lg p-4 bg-muted/50">
-        <h3 className="font-medium mb-2">Formato do arquivo CSV:</h3>
-        <code className="text-sm">
-          nome,cpf,cidade,setor,email
-        </code>
-        <p className="text-sm text-muted-foreground mt-2">
-          Exemplo: João Silva,123.456.789-00,São Paulo,TI,joao@example.com
-        </p>
+        <h3 className="font-medium mb-2">Formato dos arquivos aceitos:</h3>
+        <div className="space-y-2">
+          <div>
+            <p className="text-sm font-medium">CSV:</p>
+            <code className="text-sm">nome,cpf,cidade,setor,email</code>
+            <p className="text-sm text-muted-foreground mt-1">
+              Exemplo: João Silva,123.456.789-00,São Paulo,TI,joao@example.com
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-medium mt-2">XLSX/XLS:</p>
+            <p className="text-sm text-muted-foreground">
+              Planilha Excel com colunas: <strong>nome</strong>, <strong>cpf</strong>, <strong>cidade</strong>, <strong>setor</strong>, <strong>email</strong>
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="border rounded-lg">
