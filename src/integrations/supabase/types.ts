@@ -247,6 +247,10 @@ export type Database = {
         Args: { cpf_hash_input: string }
         Returns: boolean
       }
+      is_form_open: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator"

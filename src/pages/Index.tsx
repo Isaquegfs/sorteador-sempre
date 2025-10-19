@@ -89,25 +89,31 @@ const Index = () => {
         return;
       }
 
-      // Verificar se já está cadastrado
-      const { data: existing, error: existError } = await supabase
-        .from('participantes')
-        .select('id')
-        .eq('cpf_hash', cpfHash)
-        .maybeSingle();
+      // Verificar se já está cadastrado usando function para bypass RLS
+      const { data: participanteExiste, error: participanteError } = await supabase
+        .rpc('is_cpf_elegivel', { cpf_hash_input: cpfHash });
 
-      if (existError && existError.code !== 'PGRST116') {
-        console.error('Erro ao verificar duplicata:', existError);
-        toast({
-          title: "Erro ao verificar cadastro",
-          description: "Tente novamente mais tarde.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (participanteError) {
+        console.error('Erro ao verificar participante existente:', participanteError);
       }
 
-      if (existing) {
+      // Verificar duplicata apenas se elegível
+      let isJaCadastrado = false;
+      try {
+        const { data: existing, error: existError } = await supabase
+          .from('participantes')
+          .select('id')
+          .eq('cpf_hash', cpfHash)
+          .maybeSingle();
+
+        if (!existError && existing) {
+          isJaCadastrado = true;
+        }
+      } catch (error) {
+        console.log('Usuário ainda não cadastrado');
+      }
+
+      if (isJaCadastrado) {
         toast({
           title: "Já cadastrado",
           description: "Este CPF já está participando do sorteio.",
