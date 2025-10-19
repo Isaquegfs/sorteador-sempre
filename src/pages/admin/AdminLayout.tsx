@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const AdminLayout = () => {
-  const { user, isLoading, isAdmin, isModerator } = useAuth();
+  const { user, isLoading, isAdmin, isModerator, rolesLoaded } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -17,21 +17,16 @@ const AdminLayout = () => {
     if (!isLoading) {
       if (!user) {
         navigate('/auth');
-      } else if (!isAdmin && !isModerator) {
-        // Aguardar um pouco para as roles serem carregadas
-        setTimeout(() => {
-          if (!isAdmin && !isModerator) {
-            toast({
-              title: 'Acesso negado',
-              description: 'Você não tem permissão para acessar esta área.',
-              variant: 'destructive',
-            });
-            navigate('/');
-          }
-        }, 500);
+      } else if (rolesLoaded && !isAdmin && !isModerator) {
+        toast({
+          title: 'Acesso negado',
+          description: 'Você não tem permissão para acessar esta área.',
+          variant: 'destructive',
+        });
+        navigate('/');
       }
     }
-  }, [user, isLoading, isAdmin, isModerator, navigate, toast]);
+  }, [user, isLoading, isAdmin, isModerator, rolesLoaded, navigate, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

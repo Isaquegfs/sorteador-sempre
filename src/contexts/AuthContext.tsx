@@ -8,6 +8,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isModerator: boolean;
   isLoading: boolean;
+  rolesLoaded: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isModerator: false,
   isLoading: true,
+  rolesLoaded: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -40,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setIsAdmin(false);
           setIsModerator(false);
+          setRolesLoaded(true);
           setIsLoading(false);
         }
       }
@@ -52,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         checkUserRole(session.user.id);
       } else {
+        setRolesLoaded(true);
         setIsLoading(false);
       }
     });
@@ -80,12 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAdmin(false);
       setIsModerator(false);
     } finally {
+      setRolesLoaded(true);
       setIsLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isModerator, isLoading }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isModerator, isLoading, rolesLoaded }}>
       {children}
     </AuthContext.Provider>
   );
