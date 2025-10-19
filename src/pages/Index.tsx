@@ -90,11 +90,22 @@ const Index = () => {
       }
 
       // Verificar se já está cadastrado
-      const { data: existing } = await supabase
+      const { data: existing, error: existError } = await supabase
         .from('participantes')
         .select('id')
         .eq('cpf_hash', cpfHash)
-        .single();
+        .maybeSingle();
+
+      if (existError && existError.code !== 'PGRST116') {
+        console.error('Erro ao verificar duplicata:', existError);
+        toast({
+          title: "Erro ao verificar cadastro",
+          description: "Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       if (existing) {
         toast({
