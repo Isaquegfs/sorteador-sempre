@@ -1,4 +1,4 @@
-import { Home, Sparkles, Users, Database, Settings } from 'lucide-react';
+import { Home, Sparkles, Users, Database, Settings, UserCog } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -21,6 +21,10 @@ export function AdminSidebar() {
     { title: 'Participantes', url: '/admin/participantes', icon: Users },
     { title: 'Base Oficial', url: '/admin/base-oficial', icon: Database },
     { title: 'Sorteio', url: '/admin/sorteio', icon: Sparkles },
+  ];
+
+  const adminOnlyItems = [
+    { title: 'Gerenciar Usuários', url: '/admin/usuarios', icon: UserCog },
     { title: 'Configurações', url: '/admin/configuracoes', icon: Settings },
   ];
 
@@ -63,6 +67,31 @@ export function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-3 text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+              Administração
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {adminOnlyItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild className="w-full">
+                      <NavLink 
+                        to={item.url} 
+                        className={getNavClasses}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        <span className="text-sm">{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );
