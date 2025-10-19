@@ -243,6 +243,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_cpf_elegivel: {
+        Args: { cpf_hash_input: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator"

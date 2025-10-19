@@ -64,14 +64,22 @@ const Index = () => {
       const cpfHash = await hashCPF(formData.cpf);
       const cpfCensurado = censorCPF(formData.cpf);
 
-      // Verificar se o CPF existe na base oficial
-      const { data: baseOficial } = await supabase
-        .from('base_oficial')
-        .select('cpf_hash')
-        .eq('cpf_hash', cpfHash)
-        .single();
+      // Verificar elegibilidade usando função segura
+      const { data: isElegivel, error: elegError } = await supabase
+        .rpc('is_cpf_elegivel', { cpf_hash_input: cpfHash });
 
-      if (!baseOficial) {
+      if (elegError) {
+        console.error('Erro ao verificar elegibilidade:', elegError);
+        toast({
+          title: "Erro ao verificar CPF",
+          description: "Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!isElegivel) {
         toast({
           title: "CPF não encontrado",
           description: "Este CPF não está na base de colaboradores elegíveis.",
