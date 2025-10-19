@@ -14,15 +14,22 @@ const AdminLayout = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/auth');
-    } else if (!isLoading && user && !isAdmin && !isModerator) {
-      toast({
-        title: 'Acesso negado',
-        description: 'Você não tem permissão para acessar esta área.',
-        variant: 'destructive',
-      });
-      navigate('/');
+    if (!isLoading) {
+      if (!user) {
+        navigate('/auth');
+      } else if (!isAdmin && !isModerator) {
+        // Aguardar um pouco para as roles serem carregadas
+        setTimeout(() => {
+          if (!isAdmin && !isModerator) {
+            toast({
+              title: 'Acesso negado',
+              description: 'Você não tem permissão para acessar esta área.',
+              variant: 'destructive',
+            });
+            navigate('/');
+          }
+        }, 500);
+      }
     }
   }, [user, isLoading, isAdmin, isModerator, navigate, toast]);
 
