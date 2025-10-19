@@ -63,14 +63,17 @@ const BaseOficial = () => {
     return await Promise.all(dataLines.map(async line => {
       const [nome, cpf, cidade, setor, email] = line.split(',').map(field => field.trim());
       
-      if (!validateCPF(cpf)) {
+      // Remove qualquer formatação do CPF, aceita apenas números
+      const cpfNumeros = cpf.replace(/\D/g, '');
+      
+      if (!validateCPF(cpfNumeros)) {
         throw new Error(`CPF inválido: ${cpf}`);
       }
 
       return {
         nome,
-        cpf_hash: await hashCPF(cpf),
-        cpf_censurado: censorCPF(cpf),
+        cpf_hash: await hashCPF(cpfNumeros),
+        cpf_censurado: censorCPF(cpfNumeros),
         cidade,
         setor,
         email,
@@ -94,14 +97,17 @@ const BaseOficial = () => {
     return await Promise.all(data.map(async row => {
       const cpf = row.cpf?.toString().trim();
       
-      if (!cpf || !validateCPF(cpf)) {
+      // Remove qualquer formatação do CPF, aceita apenas números
+      const cpfNumeros = cpf?.replace(/\D/g, '') || '';
+      
+      if (!cpfNumeros || !validateCPF(cpfNumeros)) {
         throw new Error(`CPF inválido: ${cpf || 'vazio'}`);
       }
 
       return {
         nome: row.nome?.toString().trim() || '',
-        cpf_hash: await hashCPF(cpf),
-        cpf_censurado: censorCPF(cpf),
+        cpf_hash: await hashCPF(cpfNumeros),
+        cpf_censurado: censorCPF(cpfNumeros),
         cidade: row.cidade?.toString().trim() || '',
         setor: row.setor?.toString().trim() || '',
         email: row.email?.toString().trim() || '',
@@ -248,7 +254,10 @@ const BaseOficial = () => {
             <p className="text-sm font-medium">CSV:</p>
             <code className="text-sm">nome,cpf,cidade,setor,email</code>
             <p className="text-sm text-muted-foreground mt-1">
-              Exemplo: João Silva,123.456.789-00,São Paulo,TI,joao@example.com
+              Exemplo: João Silva,12345678900,São Paulo,TI,joao@example.com
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <strong>Importante:</strong> O CPF deve conter apenas números (sem pontos ou traços).
             </p>
           </div>
           <div>

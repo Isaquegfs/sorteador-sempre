@@ -25,8 +25,9 @@ export const participanteSchema = z.object({
     .regex(/^[a-zA-ZÀ-ÿ\s]+$/, 'Cidade deve conter apenas letras'),
   
   cpf: z.string()
-    .min(14, 'CPF inválido')
-    .max(14, 'CPF inválido'),
+    .min(11, 'CPF deve conter 11 dígitos')
+    .max(11, 'CPF deve conter 11 dígitos')
+    .regex(/^\d+$/, 'CPF deve conter apenas números'),
 });
 
 export type ParticipanteFormData = z.infer<typeof participanteSchema>;

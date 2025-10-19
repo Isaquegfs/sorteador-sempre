@@ -140,9 +140,11 @@ const Index = () => {
     const { name, value } = e.target;
     
     if (name === 'cpf') {
+      // Aceita apenas números no CPF
+      const numeros = value.replace(/\D/g, '');
       setFormData({
         ...formData,
-        cpf: formatCPF(value),
+        cpf: numeros,
       });
     } else {
       setFormData({
@@ -248,7 +250,7 @@ const Index = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
+              <Label htmlFor="cpf">CPF (apenas números)</Label>
               <Input
                 id="cpf"
                 name="cpf"
@@ -256,8 +258,8 @@ const Index = () => {
                 required
                 value={formData.cpf}
                 onChange={handleChange}
-                placeholder="000.000.000-00"
-                maxLength={14}
+                placeholder="12345678900"
+                maxLength={11}
               />
             </div>
 
