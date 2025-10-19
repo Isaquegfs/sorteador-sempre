@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { hashCPF, censorCPF, validateCPF } from '@/lib/cpf';
+import { hashCPF, censorCPF } from '@/lib/cpf';
 
 interface BaseOficialItem {
   id: string;
@@ -66,7 +66,7 @@ const BaseOficial = () => {
       // Remove qualquer formatação do CPF, aceita apenas números
       const cpfNumeros = cpf.replace(/\D/g, '');
       
-      if (!validateCPF(cpfNumeros)) {
+      if (!/^\d{11}$/.test(cpfNumeros)) {
         throw new Error(`CPF inválido: ${cpf}`);
       }
 
@@ -100,7 +100,7 @@ const BaseOficial = () => {
       // Remove qualquer formatação do CPF, aceita apenas números
       const cpfNumeros = cpf?.replace(/\D/g, '') || '';
       
-      if (!cpfNumeros || !validateCPF(cpfNumeros)) {
+      if (!/^\d{11}$/.test(cpfNumeros)) {
         throw new Error(`CPF inválido: ${cpf || 'vazio'}`);
       }
 
