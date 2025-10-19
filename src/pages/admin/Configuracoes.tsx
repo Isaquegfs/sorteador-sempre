@@ -20,6 +20,7 @@ const Configuracoes = () => {
 
   const loadConfig = async () => {
     try {
+      // Admins podem acessar a tabela completa
       const { data, error } = await supabase
         .from('formulario_config')
         .select('*')

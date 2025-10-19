@@ -10,6 +10,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Participantes from "./pages/admin/Participantes";
 import BaseOficial from "./pages/admin/BaseOficial";
+import Sorteio from "./pages/admin/Sorteio";
 import Configuracoes from "./pages/admin/Configuracoes";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="participantes" element={<Participantes />} />
               <Route path="base-oficial" element={<BaseOficial />} />
+              <Route path="sorteio" element={<Sorteio />} />
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
