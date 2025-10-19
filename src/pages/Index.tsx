@@ -7,6 +7,29 @@ import { KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCPF, censorCPF, hashCPF, validateCPF } from "@/lib/cpf";
 import logo from "@/assets/logo-sempre.png";
+import { z } from "zod";
+
+// Schema de validação
+const formSchema = z.object({
+  nome: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(200, "Nome deve ter no máximo 200 caracteres"),
+  email: z.string()
+    .trim()
+    .email("E-mail inválido")
+    .max(255, "E-mail deve ter no máximo 255 caracteres"),
+  setor: z.string()
+    .trim()
+    .min(1, "Setor é obrigatório")
+    .max(200, "Setor deve ter no máximo 200 caracteres"),
+  cidade: z.string()
+    .trim()
+    .min(1, "Cidade é obrigatória")
+    .max(200, "Cidade deve ter no máximo 200 caracteres"),
+  cpf: z.string()
+    .min(1, "CPF é obrigatório"),
+});
 
 const Index = () => {
   const { toast } = useToast();
@@ -35,6 +58,18 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar dados do formulário
+    const validation = formSchema.safeParse(formData);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast({
+        title: "Erro de validação",
+        description: firstError.message,
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!validateCPF(formData.cpf)) {
       toast({

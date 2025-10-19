@@ -113,6 +113,17 @@ const BaseOficial = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validar tamanho do arquivo (máximo 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O arquivo deve ter no máximo 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const isCSV = file.name.endsWith('.csv');
     const isXLSX = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
 
@@ -137,11 +148,34 @@ const BaseOficial = () => {
         records = await parseXLSX(file);
       }
 
-      const { error } = await supabase
-        .from('base_oficial')
-        .insert(records);
+      // Validar número de registros (máximo 10.000)
+      const MAX_RECORDS = 10000;
+      if (records.length > MAX_RECORDS) {
+        throw new Error(`Arquivo contém ${records.length} registros. Máximo permitido: ${MAX_RECORDS}.`);
+      }
 
-      if (error) throw error;
+      if (records.length === 0) {
+        throw new Error("Arquivo não contém registros válidos.");
+      }
+
+      // Validar tamanhos dos campos
+      for (const record of records) {
+        if (record.nome?.length > 200) throw new Error("Nome muito longo (máx 200 caracteres)");
+        if (record.email?.length > 255) throw new Error("Email muito longo (máx 255 caracteres)");
+        if (record.setor?.length > 200) throw new Error("Setor muito longo (máx 200 caracteres)");
+        if (record.cidade?.length > 200) throw new Error("Cidade muito longa (máx 200 caracteres)");
+      }
+
+      // Inserir dados em lotes de 500 registros
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < records.length; i += BATCH_SIZE) {
+        const batch = records.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase
+          .from('base_oficial')
+          .insert(batch);
+
+        if (error) throw error;
+      }
 
       toast({
         title: 'Base oficial importada com sucesso!',
