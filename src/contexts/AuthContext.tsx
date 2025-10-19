@@ -66,8 +66,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select('role')
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar roles:', error);
+        throw error;
+      }
 
+      console.log('Roles encontradas:', data);
       const roles = data?.map(r => r.role) || [];
       setIsAdmin(roles.includes('admin'));
       setIsModerator(roles.includes('moderator'));
