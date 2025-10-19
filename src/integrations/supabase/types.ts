@@ -219,7 +219,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      formulario_status: {
+        Row: {
+          aberto: boolean | null
+          id: string | null
+        }
+        Insert: {
+          aberto?: boolean | null
+          id?: string | null
+        }
+        Update: {
+          aberto?: boolean | null
+          id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
