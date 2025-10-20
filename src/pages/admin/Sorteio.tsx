@@ -2,72 +2,67 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Shuffle, Trophy } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Loader2, Sparkles } from 'lucide-react';
+import { LogoAnimation } from '@/components/sorteio/LogoAnimation';
+import { WinnerCard } from '@/components/sorteio/WinnerCard';
 
 interface Participante {
   id: string;
   nome: string;
-  email: string;
   setor: string;
   cidade: string;
-  cpf_censurado: string;
 }
 
-interface Sorteado {
-  id: string;
+interface Winner {
   nome: string;
   setor: string;
   cidade: string;
-  sorteado_em: string;
 }
 
 const Sorteio = () => {
   const [participantes, setParticipantes] = useState<Participante[]>([]);
-  const [sorteados, setSorteados] = useState<Sorteado[]>([]);
+  const [winners, setWinners] = useState<Winner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSorteando, setIsSorteando] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [showWinners, setShowWinners] = useState(false);
   const [numVencedores, setNumVencedores] = useState(1);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadData();
+    loadParticipantes();
   }, []);
 
-  const loadData = async () => {
+  const loadParticipantes = async () => {
     try {
-      // Carregar participantes
-      const { data: participantesData, error: participantesError } = await supabase
+      // Buscar todos os participantes
+      const { data: allParticipantes, error: participantesError } = await supabase
         .from('participantes')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, nome, setor, cidade');
 
       if (participantesError) throw participantesError;
 
-      // Carregar sorteados
-      const { data: sorteadosData, error: sorteadosError } = await supabase
+      // Buscar IDs dos já sorteados
+      const { data: sorteados, error: sorteadosError } = await supabase
         .from('sorteados')
-        .select('*')
-        .order('sorteado_em', { ascending: false });
+        .select('participante_id');
 
       if (sorteadosError) throw sorteadosError;
 
-      setParticipantes(participantesData || []);
-      setSorteados(sorteadosData || []);
+      const sorteadosIds = new Set(sorteados?.map(s => s.participante_id) || []);
+      
+      // Filtrar apenas participantes que não foram sorteados
+      const participantesElegiveis = allParticipantes?.filter(
+        p => !sorteadosIds.has(p.id)
+      ) || [];
+
+      setParticipantes(participantesElegiveis);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('Erro ao carregar participantes:', error);
       toast({
-        title: 'Erro ao carregar dados',
+        title: 'Erro ao carregar participantes',
         variant: 'destructive',
       });
     } finally {
@@ -78,8 +73,8 @@ const Sorteio = () => {
   const realizarSorteio = async () => {
     if (participantes.length === 0) {
       toast({
-        title: 'Nenhum participante',
-        description: 'Não há participantes para sortear.',
+        title: 'Nenhum participante elegível',
+        description: 'Todos os participantes já foram sorteados ou não há participantes cadastrados.',
         variant: 'destructive',
       });
       return;
@@ -97,15 +92,22 @@ const Sorteio = () => {
     if (numVencedores > participantes.length) {
       toast({
         title: 'Número inválido',
-        description: `Há apenas ${participantes.length} participante(s) disponível(is).`,
+        description: `Há apenas ${participantes.length} participante(s) elegível(is).`,
         variant: 'destructive',
       });
       return;
     }
 
+    // Resetar estados
+    setShowWinners(false);
+    setWinners([]);
     setIsSorteando(true);
+    setIsAnimating(true);
 
     try {
+      // Simular tempo de carregamento (3 segundos para animação)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       // Obter usuário atual
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -129,14 +131,18 @@ const Sorteio = () => {
 
       if (error) throw error;
 
+      // Mostrar vencedores
+      setWinners(vencedores);
+      setShowWinners(true);
+      setIsAnimating(false);
+
       toast({
         title: 'Sorteio realizado!',
         description: `${numVencedores} vencedor(es) sorteado(s) com sucesso!`,
       });
 
-      // Recarregar dados
-      await loadData();
-      setNumVencedores(1);
+      // Recarregar participantes para remover os sorteados
+      await loadParticipantes();
     } catch (error) {
       console.error('Erro ao realizar sorteio:', error);
       toast({
@@ -144,119 +150,137 @@ const Sorteio = () => {
         description: 'Tente novamente mais tarde.',
         variant: 'destructive',
       });
+      setIsAnimating(false);
     } finally {
       setIsSorteando(false);
     }
   };
 
+  const novoSorteio = () => {
+    setShowWinners(false);
+    setWinners([]);
+    setNumVencedores(1);
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sorteio</h1>
-        <p className="text-muted-foreground mt-2">
-          Realize sorteios entre os participantes cadastrados
-        </p>
-      </div>
+    <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-4xl space-y-8">
+        {/* Logo com animação */}
+        <LogoAnimation isAnimating={isAnimating} />
 
-      {/* Card de Sorteio */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shuffle className="h-5 w-5" />
-            Realizar Sorteio
-          </CardTitle>
-          <CardDescription>
-            {participantes.length} participante(s) elegível(is)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="num-vencedores">Número de vencedores</Label>
-            <Input
-              id="num-vencedores"
-              type="number"
-              min="1"
-              max={participantes.length}
-              value={numVencedores}
-              onChange={(e) => setNumVencedores(parseInt(e.target.value) || 1)}
-              className="max-w-xs"
-            />
+        {/* Título */}
+        <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+          SORTEADOR
+        </h1>
+
+        {/* Loading state durante sorteio */}
+        {isSorteando && !showWinners && (
+          <div className="text-center space-y-4 py-8">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <p className="text-2xl font-semibold text-muted-foreground animate-pulse">
+              Carregando sorteio...
+            </p>
+            <div className="flex justify-center gap-2">
+              <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="h-3 w-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
           </div>
+        )}
 
-          <Button
-            onClick={realizarSorteio}
-            disabled={isSorteando || participantes.length === 0}
-            className="w-full sm:w-auto"
-          >
-            {isSorteando ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sorteando...
-              </>
-            ) : (
-              <>
-                <Shuffle className="mr-2 h-4 w-4" />
-                Sortear
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+        {/* Resultados do sorteio */}
+        {showWinners && winners.length > 0 && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-foreground mb-2">
+                🎉 Vencedores Sorteados! 🎉
+              </h2>
+              <p className="text-muted-foreground">
+                Clique nos cartões para revelar os ganhadores
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {winners.map((winner, index) => (
+                <WinnerCard
+                  key={index}
+                  nome={winner.nome}
+                  setor={winner.setor}
+                  cidade={winner.cidade}
+                  delay={index * 200}
+                />
+              ))}
+            </div>
 
-      {/* Histórico de Sorteados */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
-            Histórico de Sorteados
-          </CardTitle>
-          <CardDescription>
-            {sorteados.length} vencedor(es) no total
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Setor</TableHead>
-                  <TableHead>Cidade</TableHead>
-                  <TableHead>Data do Sorteio</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sorteados.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      Nenhum sorteio realizado ainda
-                    </TableCell>
-                  </TableRow>
+            <div className="flex justify-center">
+              <Button
+                onClick={novoSorteio}
+                size="lg"
+                className="gap-2"
+              >
+                <Sparkles className="h-5 w-5" />
+                Novo Sorteio
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Formulário de sorteio */}
+        {!showWinners && !isSorteando && (
+          <div className="max-w-md mx-auto space-y-6">
+            <div className="space-y-4 bg-card p-8 rounded-lg border shadow-lg">
+              <div className="text-center mb-4">
+                <p className="text-lg text-muted-foreground">
+                  {participantes.length} participante(s) elegível(is)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="num-vencedores" className="text-lg">
+                  Quantos nomes deseja sortear?
+                </Label>
+                <Input
+                  id="num-vencedores"
+                  type="number"
+                  min="1"
+                  max={participantes.length}
+                  value={numVencedores}
+                  onChange={(e) => setNumVencedores(parseInt(e.target.value) || 1)}
+                  className="text-center text-xl h-14"
+                  disabled={isSorteando}
+                />
+              </div>
+
+              <Button
+                onClick={realizarSorteio}
+                disabled={isSorteando || participantes.length === 0}
+                className="w-full h-14 text-lg gap-2"
+                size="lg"
+              >
+                {isSorteando ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Sorteando...
+                  </>
                 ) : (
-                  sorteados.map((sorteado) => (
-                    <TableRow key={sorteado.id}>
-                      <TableCell className="font-medium">{sorteado.nome}</TableCell>
-                      <TableCell>{sorteado.setor}</TableCell>
-                      <TableCell>{sorteado.cidade}</TableCell>
-                      <TableCell>
-                        {new Date(sorteado.sorteado_em).toLocaleString('pt-BR')}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    Iniciar Sorteio
+                  </>
                 )}
-              </TableBody>
-            </Table>
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };

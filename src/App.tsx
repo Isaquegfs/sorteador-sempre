@@ -11,6 +11,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Participantes from "./pages/admin/Participantes";
 import BaseOficial from "./pages/admin/BaseOficial";
 import Sorteio from "./pages/admin/Sorteio";
+import Historico from "./pages/admin/Historico";
 import Usuarios from "./pages/admin/Usuarios";
 import Configuracoes from "./pages/admin/Configuracoes";
 import Sobre from "./pages/admin/Sobre";
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="participantes" element={<Participantes />} />
               <Route path="base-oficial" element={<BaseOficial />} />
               <Route path="sorteio" element={<Sorteio />} />
+              <Route path="historico" element={<Historico />} />
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="sobre" element={<Sobre />} />
