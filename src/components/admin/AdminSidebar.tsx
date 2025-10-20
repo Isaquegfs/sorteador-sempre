@@ -1,4 +1,4 @@
-import { Home, Sparkles, Users, Database, Settings, UserCog } from 'lucide-react';
+import { Home, Sparkles, Users, Database, Settings, UserCog, Info } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -92,6 +92,24 @@ export function AdminSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild className="w-full">
+                  <NavLink 
+                    to="/admin/sobre" 
+                    className={getNavClasses}
+                  >
+                    <Info className="h-5 w-5 mr-3" />
+                    <span className="text-sm">Sobre</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );

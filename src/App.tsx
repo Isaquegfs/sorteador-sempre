@@ -13,6 +13,7 @@ import BaseOficial from "./pages/admin/BaseOficial";
 import Sorteio from "./pages/admin/Sorteio";
 import Usuarios from "./pages/admin/Usuarios";
 import Configuracoes from "./pages/admin/Configuracoes";
+import Sobre from "./pages/admin/Sobre";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="sorteio" element={<Sorteio />} />
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="sobre" element={<Sobre />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
