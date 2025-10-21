@@ -22,6 +22,7 @@ const Configuracoes = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isClearingBase, setIsClearingBase] = useState(false);
   const [formularioAberto, setFormularioAberto] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -127,6 +128,33 @@ const Configuracoes = () => {
     }
   };
 
+  const handleClearBaseOficial = async () => {
+    setIsClearingBase(true);
+    
+    try {
+      const { error } = await supabase
+        .from('base_oficial')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (error) throw error;
+
+      toast({
+        title: 'Base Oficial limpa com sucesso!',
+        description: 'Todos os registros da Base Oficial foram removidos.',
+      });
+    } catch (error) {
+      console.error('Erro ao limpar Base Oficial:', error);
+      toast({
+        title: 'Erro ao limpar Base Oficial',
+        description: 'Não foi possível limpar a Base Oficial.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsClearingBase(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -223,6 +251,56 @@ const Configuracoes = () => {
                     <AlertDialogCancel>Não</AlertDialogCancel>
                     <AlertDialogAction onClick={handleClearTable} className="bg-destructive hover:bg-destructive/90">
                       Sim, limpar tabela
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+
+            <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+              <h3 className="font-semibold text-destructive mb-2">Limpar Base Oficial</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                ⚠️ Esta ação irá remover <strong>TODOS</strong> os registros da Base Oficial permanentemente.
+                Esta ação não pode ser desfeita e afetará a validação de participantes.
+              </p>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    disabled={isClearingBase}
+                    className="bg-destructive/80 hover:bg-destructive border border-destructive"
+                  >
+                    {isClearingBase ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Limpando...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Limpar Base Oficial
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-destructive">
+                      ⚠️ Tem certeza que deseja limpar toda a Base Oficial?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação removerá <strong>todos os registros permanentemente</strong> e não poderá ser desfeita.
+                      Os participantes não poderão mais ser validados até que uma nova base seja importada.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleClearBaseOficial} 
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Confirmar Limpeza
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

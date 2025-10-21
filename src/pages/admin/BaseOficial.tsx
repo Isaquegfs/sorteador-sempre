@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Upload, Loader2, FileSpreadsheet, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
   Table,
@@ -14,6 +14,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { hashCPF, censorCPF } from '@/lib/cpf';
 
 interface BaseOficialItem {
@@ -30,6 +41,7 @@ const BaseOficial = () => {
   const [baseOficial, setBaseOficial] = useState<BaseOficialItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -202,6 +214,33 @@ const BaseOficial = () => {
     }
   };
 
+  const handleDeleteRecord = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from('base_oficial')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Registro removido com sucesso.',
+      });
+
+      // Atualizar a lista localmente
+      setBaseOficial(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir registro:', error);
+      toast({
+        title: 'Erro ao excluir registro',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -278,12 +317,13 @@ const BaseOficial = () => {
               <TableHead>E-mail</TableHead>
               <TableHead>Setor</TableHead>
               <TableHead>Cidade</TableHead>
+              <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {baseOficial.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   Nenhum registro na base oficial
                 </TableCell>
               </TableRow>
@@ -295,6 +335,42 @@ const BaseOficial = () => {
                   <TableCell>{item.email}</TableCell>
                   <TableCell>{item.setor}</TableCell>
                   <TableCell>{item.cidade}</TableCell>
+                  <TableCell>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={deletingId === item.id}
+                        >
+                          {deletingId === item.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza que deseja apagar este registro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            O registro de <strong>{item.nome}</strong> será removido permanentemente da Base Oficial.
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteRecord(item.id)}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Sim, Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
                 </TableRow>
               ))
             )}
