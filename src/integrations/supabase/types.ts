@@ -52,6 +52,8 @@ export type Database = {
           aberto: boolean
           data_abertura: string | null
           data_fechamento: string | null
+          data_fechamento_agendado: string | null
+          fechamento_automatico_ativo: boolean | null
           id: string
           updated_at: string
         }
@@ -59,6 +61,8 @@ export type Database = {
           aberto?: boolean
           data_abertura?: string | null
           data_fechamento?: string | null
+          data_fechamento_agendado?: string | null
+          fechamento_automatico_ativo?: boolean | null
           id?: string
           updated_at?: string
         }
@@ -66,6 +70,8 @@ export type Database = {
           aberto?: boolean
           data_abertura?: string | null
           data_fechamento?: string | null
+          data_fechamento_agendado?: string | null
+          fechamento_automatico_ativo?: boolean | null
           id?: string
           updated_at?: string
         }

@@ -1,1 +1,4 @@
 project_id = "qfppuqzodqclonpkmhgk"
+
+[functions.check-form-schedule]
+verify_jwt = false
