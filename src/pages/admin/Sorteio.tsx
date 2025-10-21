@@ -4,9 +4,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, RotateCcw } from 'lucide-react';
 import { LogoAnimation } from '@/components/sorteio/LogoAnimation';
 import { WinnerCard } from '@/components/sorteio/WinnerCard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Participante {
   id: string;
@@ -29,6 +39,8 @@ const Sorteio = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showWinners, setShowWinners] = useState(false);
   const [numVencedores, setNumVencedores] = useState(1);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -162,6 +174,42 @@ const Sorteio = () => {
     setNumVencedores(1);
   };
 
+  const handleResetSorteio = async () => {
+    setIsResetting(true);
+    try {
+      // Limpar apenas a tabela de sorteados
+      const { error } = await supabase
+        .from('sorteados')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sorteio reiniciado com sucesso!',
+        description: 'Todos os participantes foram reativados.',
+      });
+
+      // Resetar estados
+      setShowWinners(false);
+      setWinners([]);
+      setNumVencedores(1);
+      
+      // Recarregar participantes
+      await loadParticipantes();
+    } catch (error) {
+      console.error('Erro ao reiniciar sorteio:', error);
+      toast({
+        title: 'Erro ao reiniciar sorteio',
+        description: 'Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResetting(false);
+      setShowResetDialog(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -171,7 +219,47 @@ const Sorteio = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6">
+    <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6 relative">
+      {/* Botão Recomeçar Sorteio - Discreto no canto superior direito */}
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowResetDialog(true)}
+          disabled={isResetting || isSorteando}
+          className="gap-2 bg-background border-border/50 text-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/10 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(242,116,53,0.15)] hover:border-[hsl(17,86%,58%)]/30 transition-all duration-300"
+        >
+          {isResetting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RotateCcw className="h-4 w-4" />
+          )}
+          <span className="text-xs">Recomeçar Sorteio</span>
+        </Button>
+      </div>
+
+      {/* Dialog de Confirmação */}
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja recomeçar o sorteio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todos os ganhadores atuais serão removidos e os nomes voltarão a ficar disponíveis.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetSorteio}
+              className="bg-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/90"
+            >
+              Sim, Recomeçar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="w-full max-w-4xl space-y-8">
         {/* Logo com animação */}
         <LogoAnimation isAnimating={isAnimating} />
