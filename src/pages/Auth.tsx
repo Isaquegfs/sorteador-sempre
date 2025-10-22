@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import logo from '@/assets/logo-sempre.png';
+import { PublicPageLayout } from '@/components/PublicPageLayout';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -68,7 +68,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <PublicPageLayout>
       <Button
         variant="ghost"
         size="sm"
@@ -79,21 +79,16 @@ const Auth = () => {
         Voltar
       </Button>
 
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex justify-center">
-          <img src={logo} alt="Sempre Internet" className="h-20 w-auto" />
-        </div>
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold">
+          {isLogin ? 'Acesso Administrativo' : 'Criar Conta'}
+        </h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          {isLogin ? 'Entre com suas credenciais' : 'Cadastre-se no sistema'}
+        </p>
+      </div>
 
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">
-            {isLogin ? 'Acesso Administrativo' : 'Criar Conta'}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Entre com suas credenciais' : 'Cadastre-se no sistema'}
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="space-y-2">
               <Label htmlFor="nome">Nome completo</Label>
@@ -129,22 +124,21 @@ const Auth = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Carregando...' : isLogin ? 'Entrar' : 'Cadastrar'}
-          </Button>
-        </form>
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Carregando...' : isLogin ? 'Entrar' : 'Cadastrar'}
+        </Button>
+      </form>
 
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-primary hover:underline"
-          >
-            {isLogin ? 'Criar uma conta' : 'Já tenho uma conta'}
-          </button>
-        </div>
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={() => setIsLogin(!isLogin)}
+          className="text-sm text-primary hover:underline"
+        >
+          {isLogin ? 'Criar uma conta' : 'Já tenho uma conta'}
+        </button>
       </div>
-    </div>
+    </PublicPageLayout>
   );
 };
 

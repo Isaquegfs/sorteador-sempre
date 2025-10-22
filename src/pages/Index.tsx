@@ -7,7 +7,7 @@ import { KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCPF, censorCPF, hashCPF, validateCPF } from "@/lib/cpf";
 import { participanteSchema } from "@/lib/validation";
-import logo from "@/assets/logo-sempre.png";
+import { PublicPageLayout } from "@/components/PublicPageLayout";
 
 const Index = () => {
   const { toast } = useToast();
@@ -180,9 +180,9 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <PublicPageLayout>
       {/* Header with Login Button */}
-      <header className="w-full py-4 px-6 flex justify-end">
+      <div className="flex justify-end mb-4">
         <Button
           variant="ghost"
           size="sm"
@@ -191,37 +191,25 @@ const Index = () => {
           onClick={() => window.location.href = '/auth'}
         >
           <KeyRound className="h-4 w-4" />
-          <span className="hidden sm:inline">Login</span>
+          <span className="text-xs">Login</span>
         </Button>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md space-y-8">
-          {/* Logo */}
-          <div className="flex justify-center">
-            <img 
-              src={logo} 
-              alt="Sempre Internet" 
-              className="h-24 w-auto"
-            />
-          </div>
+      {/* Title */}
+      <div className="text-center space-y-2 mb-6">
+        <h1 className="text-2xl font-bold text-foreground">
+          Sistema de Sorteio
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          {isFormOpen 
+            ? "Realize o seu cadastro abaixo para participar do sorteio."
+            : "O formulário está fechado no momento."}
+        </p>
+      </div>
 
-          {/* Title */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">
-              Sorteios Sempre Internet
-            </h1>
-            <p className="text-muted-foreground">
-              {isFormOpen 
-                ? "Realize o seu cadastro abaixo para participar do sorteio."
-                : "O formulário está fechado no momento."}
-            </p>
-          </div>
-
-          {/* Form */}
-          {isFormOpen ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Form */}
+      {isFormOpen ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
@@ -301,23 +289,16 @@ const Index = () => {
               ) : (
                 "Cadastrar"
               )}
-            </Button>
-          </form>
-          ) : (
-            <div className="text-center p-8 border rounded-lg bg-muted/50">
-              <p className="text-muted-foreground">
-                As inscrições estão encerradas no momento.
-              </p>
-            </div>
-          )}
+          </Button>
+        </form>
+      ) : (
+        <div className="text-center p-6 border rounded-lg bg-muted/50">
+          <p className="text-muted-foreground text-sm">
+            As inscrições estão encerradas no momento.
+          </p>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="w-full py-6 text-center text-sm text-muted-foreground border-t">
-        Sorteios Sempre Internet
-      </footer>
-    </div>
+      )}
+    </PublicPageLayout>
   );
 };
 

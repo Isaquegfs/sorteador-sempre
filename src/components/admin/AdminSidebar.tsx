@@ -1,4 +1,4 @@
-import { Home, Sparkles, Users, Database, Settings, UserCog, Info, Trophy } from 'lucide-react';
+import { Home, Sparkles, Users, Database, Settings, UserCog, Info, Trophy, Palette } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -26,6 +26,7 @@ export function AdminSidebar() {
 
   const adminOnlyItems = [
     { title: 'Gerenciar Usuários', url: '/admin/usuarios', icon: UserCog },
+    { title: 'Temas dos Sorteios', url: '/admin/temas', icon: Palette },
     { title: 'Configurações', url: '/admin/configuracoes', icon: Settings },
   ];
 

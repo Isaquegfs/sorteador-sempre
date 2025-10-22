@@ -15,6 +15,7 @@ import Historico from "./pages/admin/Historico";
 import Usuarios from "./pages/admin/Usuarios";
 import Configuracoes from "./pages/admin/Configuracoes";
 import Sobre from "./pages/admin/Sobre";
+import Temas from "./pages/admin/Temas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="historico" element={<Historico />} />
               <Route path="usuarios" element={<Usuarios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="temas" element={<Temas />} />
               <Route path="sobre" element={<Sobre />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
