@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,6 +30,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [rolesLoaded, setRolesLoaded] = useState(false);
 
+  const lastRoleUserIdRef = useRef<string | null>(null);
+  const fetchingRolesRef = useRef(false);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
@@ -37,12 +40,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // When a new session arrives, wait for roles to load before allowing access
+          setIsLoading(true);
+          setRolesLoaded(false);
           setTimeout(() => {
-            checkUserRole(session.user.id);
+            checkUserRole(session.user!.id);
           }, 0);
         } else {
           setIsAdmin(false);
           setIsModerator(false);
+          lastRoleUserIdRef.current = null;
           setRolesLoaded(true);
           setIsLoading(false);
         }
@@ -54,6 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        setIsLoading(true);
+        setRolesLoaded(false);
         checkUserRole(session.user.id);
       } else {
         setRolesLoaded(true);
@@ -65,6 +74,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkUserRole = async (userId: string) => {
+    // Prevent duplicate concurrent fetches for the same user
+    if (fetchingRolesRef.current && lastRoleUserIdRef.current === userId) return;
+    fetchingRolesRef.current = true;
+    lastRoleUserIdRef.current = userId;
+
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -85,6 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAdmin(false);
       setIsModerator(false);
     } finally {
+      fetchingRolesRef.current = false;
       setRolesLoaded(true);
       setIsLoading(false);
     }
