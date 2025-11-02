@@ -41,11 +41,29 @@ const Sorteio = () => {
   const [numVencedores, setNumVencedores] = useState(1);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [backgroundImage, setBackgroundImage] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     loadParticipantes();
+    loadActiveTema();
   }, []);
+
+  const loadActiveTema = async () => {
+    try {
+      const { data } = await supabase
+        .from('temas')
+        .select('imagem_url')
+        .eq('ativo', true)
+        .single();
+
+      if (data?.imagem_url) {
+        setBackgroundImage(data.imagem_url);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tema ativo:', error);
+    }
+  };
 
   const loadParticipantes = async () => {
     try {
@@ -220,8 +238,23 @@ const Sorteio = () => {
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6 relative">
+      {/* Fundo temático com overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat -z-10"
+        style={{
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'linear-gradient(135deg, #F27435 0%, #5A58A3 100%)',
+          filter: backgroundImage ? 'blur(2px)' : 'none',
+        }}
+      />
+      <div 
+        className="absolute inset-0 -z-10"
+        style={{
+          background: 'rgba(0, 0, 0, 0.3)',
+        }}
+      />
+
       {/* Botão Recomeçar Sorteio - Discreto no canto superior direito */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 z-10">
         <Button
           variant="outline"
           size="sm"
