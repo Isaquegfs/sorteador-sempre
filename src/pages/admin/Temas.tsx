@@ -184,6 +184,32 @@ const Temas = () => {
     }
   };
 
+  const handleDeactivate = async (id: string) => {
+    setActivatingId(id);
+    try {
+      const { error } = await supabase
+        .from('temas')
+        .update({ ativo: false })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Tema desativado com sucesso!',
+      });
+
+      await loadTemas();
+    } catch (error) {
+      console.error('Erro ao desativar tema:', error);
+      toast({
+        title: 'Erro ao desativar tema',
+        variant: 'destructive',
+      });
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   const handleDelete = async (id: string, imagemUrl: string) => {
     setDeletingId(id);
     try {
@@ -277,9 +303,14 @@ const Temas = () => {
                 onChange={handleFileChange}
                 disabled={isUploading}
               />
-              <p className="text-sm text-muted-foreground">
-                Formato: JPG, PNG ou WebP. Máximo: 5MB
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Formato: JPG, PNG ou WebP. Máximo: 5MB
+                </p>
+                <p className="text-sm font-medium text-primary">
+                  Resolução recomendada: 1920x1080 pixels (Full HD)
+                </p>
+              </div>
             </div>
 
             {previewUrl && (
@@ -366,7 +397,20 @@ const Temas = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {!tema.ativo && (
+                        {tema.ativo ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeactivate(tema.id)}
+                            disabled={activatingId === tema.id}
+                          >
+                            {activatingId === tema.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Desativar'
+                            )}
+                          </Button>
+                        ) : (
                           <Button
                             size="sm"
                             variant="outline"
