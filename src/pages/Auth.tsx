@@ -79,6 +79,15 @@ const Auth = () => {
         Voltar
       </Button>
 
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setIsLogin(!isLogin)}
+        className="absolute top-4 right-4"
+      >
+        {isLogin ? 'Criar conta' : 'Fazer login'}
+      </Button>
+
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold">
           {isLogin ? 'Acesso Administrativo' : 'Criar Conta'}
@@ -128,16 +137,6 @@ const Auth = () => {
           {isLoading ? 'Carregando...' : isLogin ? 'Entrar' : 'Cadastrar'}
         </Button>
       </form>
-
-      <div className="text-center">
-        <button
-          type="button"
-          onClick={() => setIsLogin(!isLogin)}
-          className="text-sm text-primary hover:underline"
-        >
-          {isLogin ? 'Criar uma conta' : 'Já tenho uma conta'}
-        </button>
-      </div>
     </PublicPageLayout>
   );
 };
