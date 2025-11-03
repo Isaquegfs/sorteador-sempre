@@ -204,6 +204,7 @@ export type Database = {
           descricao: string | null
           id: string
           imagem_url: string
+          logo_url: string | null
           nome: string
           updated_at: string | null
         }
@@ -213,6 +214,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_url: string
+          logo_url?: string | null
           nome: string
           updated_at?: string | null
         }
@@ -222,6 +224,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_url?: string
+          logo_url?: string | null
           nome?: string
           updated_at?: string | null
         }
@@ -279,14 +282,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_cpf_elegivel: {
-        Args: { cpf_hash_input: string }
-        Returns: boolean
-      }
-      is_form_open: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_cpf_elegivel: { Args: { cpf_hash_input: string }; Returns: boolean }
+      is_form_open: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator"

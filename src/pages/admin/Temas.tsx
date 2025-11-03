@@ -32,6 +32,7 @@ interface Tema {
   nome: string;
   descricao: string | null;
   imagem_url: string;
+  logo_url: string | null;
   ativo: boolean;
   created_at: string;
 }
@@ -43,7 +44,9 @@ const Temas = () => {
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -93,6 +96,27 @@ const Temas = () => {
     }
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'A logo deve ter no máximo 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -108,7 +132,7 @@ const Temas = () => {
     setIsUploading(true);
 
     try {
-      // Upload da imagem
+      // Upload da imagem de fundo
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -119,10 +143,30 @@ const Temas = () => {
 
       if (uploadError) throw uploadError;
 
-      // Obter URL pública
+      // Obter URL pública do fundo
       const { data: { publicUrl } } = supabase.storage
         .from('temas')
         .getPublicUrl(filePath);
+
+      // Upload da logo (se fornecida)
+      let logoPublicUrl = null;
+      if (logoFile) {
+        const logoExt = logoFile.name.split('.').pop();
+        const logoFileName = `logo_${Date.now()}.${logoExt}`;
+        const logoFilePath = `${logoFileName}`;
+
+        const { error: logoUploadError } = await supabase.storage
+          .from('temas')
+          .upload(logoFilePath, logoFile);
+
+        if (logoUploadError) throw logoUploadError;
+
+        const { data: { publicUrl: logoUrl } } = supabase.storage
+          .from('temas')
+          .getPublicUrl(logoFilePath);
+        
+        logoPublicUrl = logoUrl;
+      }
 
       // Criar tema
       const { error: insertError } = await supabase
@@ -131,6 +175,7 @@ const Temas = () => {
           nome,
           descricao: descricao || null,
           imagem_url: publicUrl,
+          logo_url: logoPublicUrl,
         });
 
       if (insertError) throw insertError;
@@ -143,7 +188,9 @@ const Temas = () => {
       setNome('');
       setDescricao('');
       setImageFile(null);
+      setLogoFile(null);
       setPreviewUrl(null);
+      setLogoPreviewUrl(null);
 
       // Recarregar temas
       await loadTemas();
@@ -315,12 +362,39 @@ const Temas = () => {
 
             {previewUrl && (
               <div className="space-y-2">
-                <Label>Prévia</Label>
+                <Label>Prévia do Fundo</Label>
                 <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden border">
                   <img
                     src={previewUrl}
                     alt="Preview"
                     className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="logo">Logo (opcional)</Label>
+              <Input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                disabled={isUploading}
+              />
+              <p className="text-sm text-muted-foreground">
+                Logo que aparecerá nas telas de cadastro e sorteio. Se não fornecida, será usada a logo padrão.
+              </p>
+            </div>
+
+            {logoPreviewUrl && (
+              <div className="space-y-2">
+                <Label>Prévia da Logo</Label>
+                <div className="relative w-40 h-20 rounded-lg overflow-hidden border bg-muted flex items-center justify-center p-2">
+                  <img
+                    src={logoPreviewUrl}
+                    alt="Logo Preview"
+                    className="max-w-full max-h-full object-contain"
                   />
                 </div>
               </div>
@@ -363,6 +437,7 @@ const Temas = () => {
                   <TableHead className="w-[200px]">Preview</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Descrição</TableHead>
+                  <TableHead className="w-[100px]">Logo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[200px]">Ações</TableHead>
                 </TableRow>
@@ -382,6 +457,19 @@ const Temas = () => {
                     <TableCell className="font-medium">{tema.nome}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {tema.descricao || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {tema.logo_url ? (
+                        <div className="w-16 h-8 rounded overflow-hidden border bg-muted flex items-center justify-center p-1">
+                          <img
+                            src={tema.logo_url}
+                            alt="Logo"
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Padrão</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {tema.ativo ? (

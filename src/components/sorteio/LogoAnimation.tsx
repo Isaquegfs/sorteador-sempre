@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import logo from '@/assets/logo-sempre.png';
+import { supabase } from '@/integrations/supabase/client';
+import logoDefault from '@/assets/logo-sempre.png';
 
 interface LogoAnimationProps {
   isAnimating: boolean;
@@ -7,6 +8,11 @@ interface LogoAnimationProps {
 
 export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
   const [animationPhase, setAnimationPhase] = useState(0);
+  const [logoUrl, setLogoUrl] = useState<string>(logoDefault);
+
+  useEffect(() => {
+    loadLogo();
+  }, []);
 
   useEffect(() => {
     if (isAnimating) {
@@ -26,6 +32,22 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
       };
     }
   }, [isAnimating]);
+
+  const loadLogo = async () => {
+    try {
+      const { data } = await supabase
+        .from('temas')
+        .select('logo_url')
+        .eq('ativo', true)
+        .single();
+
+      if (data?.logo_url) {
+        setLogoUrl(data.logo_url);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar logo do tema:', error);
+    }
+  };
 
   return (
     <div className="relative flex justify-center items-center p-8">
@@ -68,7 +90,7 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
         
         {/* Logo */}
         <img 
-          src={logo} 
+          src={logoUrl} 
           alt="Sempre Internet" 
           className={`h-32 w-auto relative z-10 transition-transform duration-300 ${
             isAnimating ? 'scale-110' : 'scale-100'

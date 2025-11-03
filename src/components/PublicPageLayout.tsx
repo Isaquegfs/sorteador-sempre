@@ -8,6 +8,7 @@ interface PublicPageLayoutProps {
 
 export const PublicPageLayout = ({ children }: PublicPageLayoutProps) => {
   const [backgroundImage, setBackgroundImage] = useState<string>('');
+  const [logoUrl, setLogoUrl] = useState<string>(logoSempre);
 
   useEffect(() => {
     loadActiveTema();
@@ -17,12 +18,15 @@ export const PublicPageLayout = ({ children }: PublicPageLayoutProps) => {
     try {
       const { data } = await supabase
         .from('temas')
-        .select('imagem_url')
+        .select('imagem_url, logo_url')
         .eq('ativo', true)
         .single();
 
       if (data?.imagem_url) {
         setBackgroundImage(data.imagem_url);
+      }
+      if (data?.logo_url) {
+        setLogoUrl(data.logo_url);
       }
     } catch (error) {
       console.error('Erro ao carregar tema ativo:', error);
@@ -57,7 +61,7 @@ export const PublicPageLayout = ({ children }: PublicPageLayoutProps) => {
           {/* Logo */}
           <div className="flex justify-center mb-6">
             <img 
-              src={logoSempre} 
+              src={logoUrl} 
               alt="Sempre Internet" 
               className="h-16 object-contain"
             />
