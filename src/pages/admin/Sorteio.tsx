@@ -237,17 +237,17 @@ const Sorteio = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6 relative">
-      {/* Fundo temático com overlay */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+      {/* Fundo temático com overlay - Tela inteira */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat -z-10"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
         style={{
           backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'linear-gradient(135deg, #F27435 0%, #5A58A3 100%)',
           filter: backgroundImage ? 'blur(2px)' : 'none',
         }}
       />
       <div 
-        className="absolute inset-0 -z-10"
+        className="fixed inset-0 -z-10"
         style={{
           background: 'rgba(0, 0, 0, 0.3)',
         }}
