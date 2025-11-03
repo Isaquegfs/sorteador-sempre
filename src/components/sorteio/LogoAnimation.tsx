@@ -66,16 +66,14 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
           </>
         )}
         
-        {/* Logo com borda */}
-        <div className={`bg-card rounded-lg border shadow-lg p-4 relative z-10 transition-transform duration-300 ${
-          isAnimating ? 'scale-110' : 'scale-100'
-        }`}>
-          <img 
-            src={logo} 
-            alt="Sempre Internet" 
-            className="h-32 w-auto"
-          />
-        </div>
+        {/* Logo */}
+        <img 
+          src={logo} 
+          alt="Sempre Internet" 
+          className={`h-32 w-auto transition-transform duration-300 ${
+            isAnimating ? 'scale-110' : 'scale-100'
+          }`}
+        />
       </div>
     </div>
   );
