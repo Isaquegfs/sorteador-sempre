@@ -237,17 +237,17 @@ const Sorteio = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
-      {/* Fundo temático com overlay - Tela inteira */}
+    <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center p-6 relative">
+      {/* Fundo temático com overlay */}
       <div 
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat -z-10"
         style={{
           backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'linear-gradient(135deg, #F27435 0%, #5A58A3 100%)',
           filter: backgroundImage ? 'blur(2px)' : 'none',
         }}
       />
       <div 
-        className="fixed inset-0 -z-10"
+        className="absolute inset-0 -z-10"
         style={{
           background: 'rgba(0, 0, 0, 0.3)',
         }}
@@ -293,117 +293,114 @@ const Sorteio = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="w-full max-w-4xl">
-        {/* Card principal com todos os elementos */}
-        <div className="bg-card rounded-lg border shadow-lg p-8 space-y-8">
-          {/* Logo com animação */}
-          <LogoAnimation isAnimating={isAnimating} />
+      <div className="w-full max-w-4xl space-y-8">
+        {/* Logo com animação */}
+        <LogoAnimation isAnimating={isAnimating} />
 
-          {/* Título */}
-          <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
-            SORTEADOR
-          </h1>
+        {/* Título */}
+        <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+          SORTEADOR
+        </h1>
 
-          {/* Loading state durante sorteio */}
-          {isSorteando && !showWinners && (
-            <div className="text-center space-y-4 py-8">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-              <p className="text-2xl font-semibold text-muted-foreground animate-pulse">
-                Carregando sorteio...
-              </p>
-              <div className="flex justify-center gap-2">
-                <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="h-3 w-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
+        {/* Loading state durante sorteio */}
+        {isSorteando && !showWinners && (
+          <div className="text-center space-y-4 py-8">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <p className="text-2xl font-semibold text-muted-foreground animate-pulse">
+              Carregando sorteio...
+            </p>
+            <div className="flex justify-center gap-2">
+              <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="h-3 w-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Resultados do sorteio */}
-          {showWinners && winners.length > 0 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <h2 className="text-3xl font-bold text-foreground mb-2">
-                  🎉 Vencedores Sorteados! 🎉
-                </h2>
-                <p className="text-muted-foreground">
-                  Clique nos cartões para revelar os ganhadores
+        {/* Resultados do sorteio */}
+        {showWinners && winners.length > 0 && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-foreground mb-2">
+                🎉 Vencedores Sorteados! 🎉
+              </h2>
+              <p className="text-muted-foreground">
+                Clique nos cartões para revelar os ganhadores
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-6">
+              {winners.map((winner, index) => (
+                <WinnerCard
+                  key={index}
+                  nome={winner.nome}
+                  setor={winner.setor}
+                  cidade={winner.cidade}
+                  delay={index * 200}
+                />
+              ))}
+            </div>
+
+            <div className="flex justify-center">
+              <Button
+                onClick={novoSorteio}
+                size="lg"
+                className="gap-2"
+              >
+                <Sparkles className="h-5 w-5" />
+                Novo Sorteio
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Formulário de sorteio */}
+        {!showWinners && !isSorteando && (
+          <div className="max-w-md mx-auto space-y-6">
+            <div className="space-y-4 bg-card p-8 rounded-lg border shadow-lg">
+              <div className="text-center mb-4">
+                <p className="text-lg text-muted-foreground">
+                  {participantes.length} participante(s) elegível(is)
                 </p>
               </div>
-              
-              <div className="flex flex-wrap justify-center gap-6">
-                {winners.map((winner, index) => (
-                  <WinnerCard
-                    key={index}
-                    nome={winner.nome}
-                    setor={winner.setor}
-                    cidade={winner.cidade}
-                    delay={index * 200}
-                  />
-                ))}
+
+              <div className="space-y-2">
+                <Label htmlFor="num-vencedores" className="text-lg">
+                  Quantos nomes deseja sortear?
+                </Label>
+                <Input
+                  id="num-vencedores"
+                  type="number"
+                  min="1"
+                  max={participantes.length}
+                  value={numVencedores}
+                  onChange={(e) => setNumVencedores(parseInt(e.target.value) || 1)}
+                  className="text-center text-xl h-14"
+                  disabled={isSorteando}
+                />
               </div>
 
-              <div className="flex justify-center">
-                <Button
-                  onClick={novoSorteio}
-                  size="lg"
-                  className="gap-2"
-                >
-                  <Sparkles className="h-5 w-5" />
-                  Novo Sorteio
-                </Button>
-              </div>
+              <Button
+                onClick={realizarSorteio}
+                disabled={isSorteando || participantes.length === 0}
+                className="w-full h-14 text-lg gap-2"
+                size="lg"
+              >
+                {isSorteando ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Sorteando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    Iniciar Sorteio
+                  </>
+                )}
+              </Button>
             </div>
-          )}
-
-          {/* Formulário de sorteio */}
-          {!showWinners && !isSorteando && (
-            <div className="max-w-md mx-auto space-y-6">
-              <div className="space-y-4 bg-background p-8 rounded-lg border">
-                <div className="text-center mb-4">
-                  <p className="text-lg text-muted-foreground">
-                    {participantes.length} participante(s) elegível(is)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="num-vencedores" className="text-lg">
-                    Quantos nomes deseja sortear?
-                  </Label>
-                  <Input
-                    id="num-vencedores"
-                    type="number"
-                    min="1"
-                    max={participantes.length}
-                    value={numVencedores}
-                    onChange={(e) => setNumVencedores(parseInt(e.target.value) || 1)}
-                    className="text-center text-xl h-14"
-                    disabled={isSorteando}
-                  />
-                </div>
-
-                <Button
-                  onClick={realizarSorteio}
-                  disabled={isSorteando || participantes.length === 0}
-                  className="w-full h-14 text-lg gap-2"
-                  size="lg"
-                >
-                  {isSorteando ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Sorteando...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5" />
-                      Iniciar Sorteio
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
