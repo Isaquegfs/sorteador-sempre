@@ -298,30 +298,13 @@ const Sorteio = () => {
       </AlertDialog>
 
       <div className="w-full max-w-4xl space-y-8">
-        {/* Container com efeito glass para logo e título */}
-        <div className="flex justify-center">
-          <div 
-            className="backdrop-blur-md bg-white/12 rounded-2xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-white/20"
-            style={{
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15), 0 0 40px rgba(0, 51, 161, 0.1)',
-            }}
-          >
-            {/* Logo com animação */}
-            <div className="mb-6">
-              <LogoAnimation isAnimating={isAnimating} />
-            </div>
+        {/* Logo com animação */}
+        <LogoAnimation isAnimating={isAnimating} />
 
-            {/* Título */}
-            <h1 
-              className="text-6xl font-bold text-center text-primary"
-              style={{
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.25)',
-              }}
-            >
-              SORTEADOR
-            </h1>
-          </div>
-        </div>
+        {/* Título */}
+        <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+          SORTEADOR
+        </h1>
 
         {/* Loading state durante sorteio */}
         {isSorteando && !showWinners && (
