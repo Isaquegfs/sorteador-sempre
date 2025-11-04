@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { selectRandomItems } from '@/lib/random';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -142,9 +143,8 @@ const Sorteio = () => {
       // Obter usuário atual
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Embaralhar e selecionar vencedores
-      const shuffled = [...participantes].sort(() => Math.random() - 0.5);
-      const vencedores = shuffled.slice(0, numVencedores);
+      // Selecionar vencedores usando Fisher-Yates (100% aleatório e imparcial)
+      const vencedores = selectRandomItems(participantes, numVencedores);
 
       // Preparar dados para inserção
       const sorteadosData = vencedores.map(vencedor => ({
