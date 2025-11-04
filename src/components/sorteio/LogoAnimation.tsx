@@ -7,31 +7,11 @@ interface LogoAnimationProps {
 }
 
 export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
-  const [animationPhase, setAnimationPhase] = useState(0);
   const [logoUrl, setLogoUrl] = useState<string>(logoDefault);
 
   useEffect(() => {
     loadLogo();
   }, []);
-
-  useEffect(() => {
-    if (isAnimating) {
-      setAnimationPhase(1);
-      
-      const timer1 = setTimeout(() => {
-        setAnimationPhase(2);
-      }, 1500);
-
-      const timer2 = setTimeout(() => {
-        setAnimationPhase(0);
-      }, 3000);
-
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-      };
-    }
-  }, [isAnimating]);
 
   const loadLogo = async () => {
     try {
@@ -54,38 +34,12 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
       <div className="relative">
         {/* Glow effect */}
         {isAnimating && (
-          <>
-            <div 
-              className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary rounded-full blur-3xl opacity-60"
-              style={{
-                animation: 'pulse 1.5s ease-in-out infinite'
-              }}
-            />
-            
-            {/* Rotating light beam - First loop */}
-            {animationPhase >= 1 && (
-              <div 
-                className="absolute inset-0"
-                style={{
-                  animation: 'rotate 1.5s linear'
-                }}
-              >
-                <div className="absolute top-1/2 left-1/2 w-2 h-full bg-gradient-to-b from-secondary/0 via-secondary to-secondary/0 transform -translate-x-1/2 -translate-y-1/2" />
-              </div>
-            )}
-            
-            {/* Rotating light beam - Second loop */}
-            {animationPhase >= 2 && (
-              <div 
-                className="absolute inset-0"
-                style={{
-                  animation: 'rotate 1.5s linear'
-                }}
-              >
-                <div className="absolute top-1/2 left-1/2 w-2 h-full bg-gradient-to-b from-primary/0 via-primary to-primary/0 transform -translate-x-1/2 -translate-y-1/2" />
-              </div>
-            )}
-          </>
+          <div 
+            className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary rounded-full blur-3xl opacity-60"
+            style={{
+              animation: 'pulse 1.5s ease-in-out infinite'
+            }}
+          />
         )}
         
         {/* Logo */}

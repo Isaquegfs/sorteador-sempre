@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Sparkles, RotateCcw } from 'lucide-react';
 import { LogoAnimation } from '@/components/sorteio/LogoAnimation';
 import { WinnerCard } from '@/components/sorteio/WinnerCard';
+import { InfinityLoader } from '@/components/sorteio/InfinityLoader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -308,17 +309,7 @@ const Sorteio = () => {
 
         {/* Loading state durante sorteio */}
         {isSorteando && !showWinners && (
-          <div className="text-center space-y-4 py-8">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-2xl font-semibold text-muted-foreground animate-pulse">
-              Carregando sorteio...
-            </p>
-            <div className="flex justify-center gap-2">
-              <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="h-3 w-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
-          </div>
+          <InfinityLoader />
         )}
 
         {/* Resultados do sorteio */}
