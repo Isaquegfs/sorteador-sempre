@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --popover-foreground: 240 6% 10%;
 
     /* Sempre Internet Brand Colors */
-    --primary: 246 38% 50%; /* Purple-blue #5A58A3 */
+    --primary: 221 100% 32%; /* Blue #0033A1 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 17 89% 58%; /* Orange #F27435 */
@@ -35,7 +35,7 @@ All colors MUST be HSL.
 
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 246 38% 50%;
+    --ring: 221 100% 32%;
 
     --radius: 0.75rem;
 
@@ -65,7 +65,7 @@ All colors MUST be HSL.
     --popover: 240 8% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 246 38% 50%;
+    --primary: 221 100% 32%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 17 89% 58%;
@@ -82,7 +82,7 @@ All colors MUST be HSL.
 
     --border: 240 6% 20%;
     --input: 240 6% 20%;
-    --ring: 246 38% 60%;
+    --ring: 221 100% 40%;
     
     /* Liquid Glass Orange - Dark Mode */
     --glass-orange-light: 17 100% 70%;

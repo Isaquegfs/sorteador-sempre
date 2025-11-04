@@ -39,7 +39,7 @@ export const PublicPageLayout = ({ children }: PublicPageLayoutProps) => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'linear-gradient(135deg, #F27435 0%, #5A58A3 100%)',
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'linear-gradient(135deg, #F27435 0%, #0033A1 100%)',
           imageRendering: '-webkit-optimize-contrast',
           WebkitBackfaceVisibility: 'hidden',
           backfaceVisibility: 'hidden',
