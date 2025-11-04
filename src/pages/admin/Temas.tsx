@@ -352,10 +352,13 @@ const Temas = () => {
               />
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
-                  Formato: JPG, PNG ou WebP. Máximo: 5MB
+                  Formato: PNG ou JPG de alta qualidade. Máximo: 5MB
                 </p>
                 <p className="text-sm font-medium text-primary">
                   Resolução recomendada: 1920x1080 pixels (Full HD)
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  💡 Use imagens de alta qualidade sem compressão para melhor resultado
                 </p>
               </div>
             </div>

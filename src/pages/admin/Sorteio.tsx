@@ -243,13 +243,17 @@ const Sorteio = () => {
         className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
         style={{
           backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'linear-gradient(135deg, #F27435 0%, #5A58A3 100%)',
-          filter: backgroundImage ? 'blur(2px)' : 'none',
+          imageRendering: '-webkit-optimize-contrast',
+          WebkitBackfaceVisibility: 'hidden',
+          backfaceVisibility: 'hidden',
+          transform: 'translateZ(0)',
+          willChange: 'transform',
         }}
       />
       <div 
         className="fixed inset-0 -z-10"
         style={{
-          background: 'rgba(0, 0, 0, 0.3)',
+          background: 'rgba(0, 0, 0, 0.15)',
         }}
       />
 
