@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Upload, Trash2, Eye, CheckCircle2 } from 'lucide-react';
+import { Loader2, Upload, Trash2, Eye, CheckCircle2, Pencil } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -42,6 +42,7 @@ const Temas = () => {
   const [temas, setTemas] = useState<Tema[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [corTitulo, setCorTitulo] = useState('#0033A1');
@@ -119,13 +120,45 @@ const Temas = () => {
     }
   };
 
+  const handleEdit = (tema: Tema) => {
+    setEditingId(tema.id);
+    setNome(tema.nome);
+    setDescricao(tema.descricao || '');
+    setCorTitulo(tema.cor_titulo);
+    setPreviewUrl(tema.imagem_url);
+    setLogoPreviewUrl(tema.logo_url);
+    // Scroll para o formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNome('');
+    setDescricao('');
+    setCorTitulo('#0033A1');
+    setImageFile(null);
+    setLogoFile(null);
+    setPreviewUrl(null);
+    setLogoPreviewUrl(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!nome || !imageFile) {
+    if (!nome) {
       toast({
-        title: 'Campos obrigatórios',
-        description: 'Preencha o nome e selecione uma imagem',
+        title: 'Campo obrigatório',
+        description: 'Preencha o nome do tema',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Se estiver editando e não houver nova imagem, não precisa validar
+    if (!editingId && !imageFile) {
+      toast({
+        title: 'Campo obrigatório',
+        description: 'Selecione uma imagem',
         variant: 'destructive',
       });
       return;
@@ -134,24 +167,30 @@ const Temas = () => {
     setIsUploading(true);
 
     try {
-      // Upload da imagem de fundo
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      let publicUrl = previewUrl; // Manter URL existente se não houver nova imagem
+      let logoPublicUrl = logoPreviewUrl; // Manter URL existente se não houver nova logo
 
-      const { error: uploadError } = await supabase.storage
-        .from('temas')
-        .upload(filePath, imageFile);
+      // Upload da imagem de fundo (se houver arquivo novo)
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('temas')
+          .upload(filePath, imageFile);
 
-      // Obter URL pública do fundo
-      const { data: { publicUrl } } = supabase.storage
-        .from('temas')
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
+
+        // Obter URL pública do fundo
+        const { data: { publicUrl: newPublicUrl } } = supabase.storage
+          .from('temas')
+          .getPublicUrl(filePath);
+        
+        publicUrl = newPublicUrl;
+      }
 
       // Upload da logo (se fornecida)
-      let logoPublicUrl = null;
       if (logoFile) {
         const logoExt = logoFile.name.split('.').pop();
         const logoFileName = `logo_${Date.now()}.${logoExt}`;
@@ -170,38 +209,52 @@ const Temas = () => {
         logoPublicUrl = logoUrl;
       }
 
-      // Criar tema
-      const { error: insertError } = await supabase
-        .from('temas')
-        .insert({
-          nome,
-          descricao: descricao || null,
-          imagem_url: publicUrl,
-          logo_url: logoPublicUrl,
-          cor_titulo: corTitulo,
+      if (editingId) {
+        // Atualizar tema existente
+        const { error: updateError } = await supabase
+          .from('temas')
+          .update({
+            nome,
+            descricao: descricao || null,
+            imagem_url: publicUrl,
+            logo_url: logoPublicUrl,
+            cor_titulo: corTitulo,
+          })
+          .eq('id', editingId);
+
+        if (updateError) throw updateError;
+
+        toast({
+          title: 'Tema atualizado com sucesso!',
         });
+      } else {
+        // Criar tema novo
+        const { error: insertError } = await supabase
+          .from('temas')
+          .insert({
+            nome,
+            descricao: descricao || null,
+            imagem_url: publicUrl!,
+            logo_url: logoPublicUrl,
+            cor_titulo: corTitulo,
+          });
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
 
-      toast({
-        title: 'Tema criado com sucesso!',
-      });
+        toast({
+          title: 'Tema criado com sucesso!',
+        });
+      }
 
       // Limpar formulário
-      setNome('');
-      setDescricao('');
-      setCorTitulo('#0033A1');
-      setImageFile(null);
-      setLogoFile(null);
-      setPreviewUrl(null);
-      setLogoPreviewUrl(null);
+      handleCancelEdit();
 
       // Recarregar temas
       await loadTemas();
     } catch (error) {
-      console.error('Erro ao criar tema:', error);
+      console.error('Erro ao salvar tema:', error);
       toast({
-        title: 'Erro ao criar tema',
+        title: editingId ? 'Erro ao atualizar tema' : 'Erro ao criar tema',
         variant: 'destructive',
       });
     } finally {
@@ -315,9 +368,12 @@ const Temas = () => {
       {/* Formulário de upload */}
       <Card>
         <CardHeader>
-          <CardTitle>Criar Novo Tema</CardTitle>
+          <CardTitle>{editingId ? 'Editar Tema' : 'Criar Novo Tema'}</CardTitle>
           <CardDescription>
-            Faça upload de uma imagem para usar como fundo nas páginas públicas
+            {editingId 
+              ? 'Atualize as informações do tema selecionado'
+              : 'Faça upload de uma imagem para usar como fundo nas páginas públicas'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -371,7 +427,7 @@ const Temas = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imagem">Imagem do Fundo *</Label>
+              <Label htmlFor="imagem">Imagem do Fundo {editingId ? '(opcional - deixe em branco para manter a atual)' : '*'}</Label>
               <Input
                 id="imagem"
                 type="file"
@@ -406,7 +462,7 @@ const Temas = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="logo">Logo (opcional)</Label>
+              <Label htmlFor="logo">Logo {editingId ? '(opcional - deixe em branco para manter a atual)' : '(opcional)'}</Label>
               <Input
                 id="logo"
                 type="file"
@@ -527,6 +583,15 @@ const Temas = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEdit(tema)}
+                          disabled={isUploading}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
                         {tema.ativo ? (
                           <Button
                             size="sm"
