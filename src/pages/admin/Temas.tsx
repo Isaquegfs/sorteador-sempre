@@ -33,6 +33,7 @@ interface Tema {
   descricao: string | null;
   imagem_url: string;
   logo_url: string | null;
+  cor_titulo: string;
   ativo: boolean;
   created_at: string;
 }
@@ -43,6 +44,7 @@ const Temas = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [corTitulo, setCorTitulo] = useState('#0033A1');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -176,6 +178,7 @@ const Temas = () => {
           descricao: descricao || null,
           imagem_url: publicUrl,
           logo_url: logoPublicUrl,
+          cor_titulo: corTitulo,
         });
 
       if (insertError) throw insertError;
@@ -187,6 +190,7 @@ const Temas = () => {
       // Limpar formulário
       setNome('');
       setDescricao('');
+      setCorTitulo('#0033A1');
       setImageFile(null);
       setLogoFile(null);
       setPreviewUrl(null);
@@ -342,6 +346,31 @@ const Temas = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="cor-titulo">Cor do Título "SORTEADOR"</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="cor-titulo"
+                  type="color"
+                  value={corTitulo}
+                  onChange={(e) => setCorTitulo(e.target.value)}
+                  disabled={isUploading}
+                  className="w-20 h-10 cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={corTitulo}
+                  onChange={(e) => setCorTitulo(e.target.value)}
+                  disabled={isUploading}
+                  placeholder="#0033A1"
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Escolha a cor que será aplicada ao título "SORTEADOR" na tela de sorteio
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="imagem">Imagem do Fundo *</Label>
               <Input
                 id="imagem"
@@ -441,6 +470,7 @@ const Temas = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead className="w-[100px]">Logo</TableHead>
+                  <TableHead>Cor Título</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[200px]">Ações</TableHead>
                 </TableRow>
@@ -473,6 +503,15 @@ const Temas = () => {
                       ) : (
                         <span className="text-xs text-muted-foreground">Padrão</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-6 h-6 rounded border"
+                          style={{ backgroundColor: tema.cor_titulo }}
+                        />
+                        <span className="text-xs font-mono">{tema.cor_titulo}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {tema.ativo ? (

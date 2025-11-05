@@ -44,6 +44,7 @@ const Sorteio = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
+  const [titleColor, setTitleColor] = useState<string>('#0033A1');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -55,12 +56,15 @@ const Sorteio = () => {
     try {
       const { data } = await supabase
         .from('temas')
-        .select('imagem_url')
+        .select('imagem_url, cor_titulo')
         .eq('ativo', true)
         .single();
 
       if (data?.imagem_url) {
         setBackgroundImage(data.imagem_url);
+      }
+      if (data?.cor_titulo) {
+        setTitleColor(data.cor_titulo);
       }
     } catch (error) {
       console.error('Erro ao carregar tema ativo:', error);
@@ -295,7 +299,10 @@ const Sorteio = () => {
         <LogoAnimation isAnimating={isAnimating} />
 
         {/* Título */}
-        <h1 className="text-6xl font-bold text-center bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+        <h1 
+          className="text-6xl font-bold text-center"
+          style={{ color: titleColor }}
+        >
           SORTEADOR
         </h1>
 
@@ -308,10 +315,22 @@ const Sorteio = () => {
         {showWinners && winners.length > 0 && (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-foreground mb-2">
+              <h2 
+                className="text-3xl font-bold mb-2"
+                style={{ 
+                  color: 'white',
+                  textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)'
+                }}
+              >
                 🎉 Vencedores Sorteados! 🎉
               </h2>
-              <p className="text-muted-foreground">
+              <p 
+                className="text-lg"
+                style={{ 
+                  color: 'white',
+                  textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8)'
+                }}
+              >
                 Clique nos cartões para revelar os ganhadores
               </p>
             </div>

@@ -200,6 +200,7 @@ export type Database = {
       temas: {
         Row: {
           ativo: boolean | null
+          cor_titulo: string | null
           created_at: string | null
           descricao: string | null
           id: string
@@ -210,6 +211,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          cor_titulo?: string | null
           created_at?: string | null
           descricao?: string | null
           id?: string
@@ -220,6 +222,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          cor_titulo?: string | null
           created_at?: string | null
           descricao?: string | null
           id?: string
