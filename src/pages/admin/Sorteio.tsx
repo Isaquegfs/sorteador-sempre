@@ -196,17 +196,9 @@ const Sorteio = () => {
   const handleResetSorteio = async () => {
     setIsResetting(true);
     try {
-      // Limpar apenas a tabela de sorteados
-      const { error } = await supabase
-        .from('sorteados')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
-
-      if (error) throw error;
-
       toast({
-        title: 'Sorteio reiniciado com sucesso!',
-        description: 'Todos os participantes foram reativados.',
+        title: 'Sorteio reiniciado!',
+        description: 'Todos os participantes foram reativados. O histórico foi mantido.',
       });
 
       // Resetar estados
@@ -214,7 +206,7 @@ const Sorteio = () => {
       setWinners([]);
       setNumVencedores(1);
       
-      // Recarregar participantes
+      // Recarregar participantes (o histórico permanece intacto)
       await loadParticipantes();
     } catch (error) {
       console.error('Erro ao reiniciar sorteio:', error);
@@ -282,8 +274,8 @@ const Sorteio = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja recomeçar o sorteio?</AlertDialogTitle>
             <AlertDialogDescription>
-              Todos os ganhadores atuais serão removidos e os nomes voltarão a ficar disponíveis.
-              Esta ação não pode ser desfeita.
+              Todos os participantes voltarão a ficar disponíveis para novos sorteios.
+              O histórico de ganhadores anteriores será mantido.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
