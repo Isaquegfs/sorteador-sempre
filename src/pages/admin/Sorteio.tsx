@@ -71,7 +71,7 @@ const Sorteio = () => {
     }
   };
 
-  const loadParticipantes = async () => {
+  const loadParticipantes = async (incluirSorteados = false) => {
     try {
       // Buscar todos os participantes
       const { data: allParticipantes, error: participantesError } = await supabase
@@ -80,21 +80,26 @@ const Sorteio = () => {
 
       if (participantesError) throw participantesError;
 
-      // Buscar IDs dos já sorteados
-      const { data: sorteados, error: sorteadosError } = await supabase
-        .from('sorteados')
-        .select('participante_id');
+      if (incluirSorteados) {
+        // Carregar todos os participantes sem filtrar
+        setParticipantes(allParticipantes || []);
+      } else {
+        // Buscar IDs dos já sorteados
+        const { data: sorteados, error: sorteadosError } = await supabase
+          .from('sorteados')
+          .select('participante_id');
 
-      if (sorteadosError) throw sorteadosError;
+        if (sorteadosError) throw sorteadosError;
 
-      const sorteadosIds = new Set(sorteados?.map(s => s.participante_id) || []);
-      
-      // Filtrar apenas participantes que não foram sorteados
-      const participantesElegiveis = allParticipantes?.filter(
-        p => !sorteadosIds.has(p.id)
-      ) || [];
+        const sorteadosIds = new Set(sorteados?.map(s => s.participante_id) || []);
+        
+        // Filtrar apenas participantes que não foram sorteados
+        const participantesElegiveis = allParticipantes?.filter(
+          p => !sorteadosIds.has(p.id)
+        ) || [];
 
-      setParticipantes(participantesElegiveis);
+        setParticipantes(participantesElegiveis);
+      }
     } catch (error) {
       console.error('Erro ao carregar participantes:', error);
       toast({
@@ -200,18 +205,18 @@ const Sorteio = () => {
   const handleResetSorteio = async () => {
     setIsResetting(true);
     try {
-      toast({
-        title: 'Sorteio reiniciado!',
-        description: 'Todos os participantes foram reativados. O histórico foi mantido.',
-      });
-
       // Resetar estados
       setShowWinners(false);
       setWinners([]);
       setNumVencedores(1);
       
-      // Recarregar participantes (o histórico permanece intacto)
-      await loadParticipantes();
+      // Recarregar TODOS os participantes (incluir sorteados anteriormente)
+      await loadParticipantes(true);
+
+      toast({
+        title: 'Sorteio reiniciado!',
+        description: 'Todos os participantes foram reativados. O histórico foi mantido.',
+      });
     } catch (error) {
       console.error('Erro ao reiniciar sorteio:', error);
       toast({
