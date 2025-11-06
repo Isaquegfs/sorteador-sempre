@@ -45,6 +45,7 @@ const Sorteio = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [titleColor, setTitleColor] = useState<string>('#0033A1');
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,7 +82,7 @@ const Sorteio = () => {
 
       if (participantesError) throw participantesError;
 
-      setParticipantes(allParticipantes || []);
+      setParticipantes((allParticipantes || []).filter(p => !excludedIds.has(p.id)));
     } catch (error) {
       console.error('Erro ao carregar participantes:', error);
       toast({
@@ -153,14 +154,21 @@ const Sorteio = () => {
 
       if (error) throw error;
 
+      // Atualizar lista temporária: remover vencedores da pool atual
+      const novosExcluidos = new Set(excludedIds);
+      vencedores.forEach(v => novosExcluidos.add(v.id));
+      setExcludedIds(novosExcluidos);
+      setParticipantes(prev => prev.filter(p => !novosExcluidos.has(p.id)));
+
       // Mostrar vencedores
-      setWinners(vencedores);
+      const vencedoresExibicao = vencedores.map(v => ({ nome: v.nome, setor: v.setor, cidade: v.cidade }));
+      setWinners(vencedoresExibicao);
       setShowWinners(true);
       setIsAnimating(false);
 
       toast({
         title: 'Sorteio realizado!',
-        description: `${numVencedores} vencedor(es) sorteado(s) e registrado(s) no histórico!`,
+        description: `${numVencedores} vencedor(es) sorteado(s) e removido(s) da lista temporária!`,
       });
     } catch (error) {
       console.error('Erro ao realizar sorteio:', error);
@@ -188,6 +196,7 @@ const Sorteio = () => {
       setShowWinners(false);
       setWinners([]);
       setNumVencedores(1);
+      setExcludedIds(new Set());
       
       // Recarregar participantes da base oficial
       await loadParticipantes();
