@@ -46,10 +46,28 @@ const Sorteio = () => {
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [titleColor, setTitleColor] = useState<string>('#0033A1');
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
+  const persistExcluded = (set: Set<string>) => {
+    try {
+      localStorage.setItem(EXCLUDED_STORAGE_KEY, JSON.stringify(Array.from(set)));
+    } catch {}
+  };
+  const readExcluded = (): Set<string> => {
+    try {
+      const raw = localStorage.getItem(EXCLUDED_STORAGE_KEY);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw) as string[];
+      return new Set(arr);
+    } catch {
+      return new Set();
+    }
+  };
   const { toast } = useToast();
 
   useEffect(() => {
-    loadParticipantes();
+    const stored = readExcluded();
+    setExcludedIds(stored);
+    loadParticipantes(stored);
     loadActiveTema();
   }, []);
 
@@ -72,7 +90,7 @@ const Sorteio = () => {
     }
   };
 
-  const loadParticipantes = async () => {
+  const loadParticipantes = async (ids?: Set<string>) => {
     try {
       // Buscar TODOS os participantes da base oficial
       // O histórico (sorteados) não afeta quem pode ser sorteado
@@ -82,7 +100,8 @@ const Sorteio = () => {
 
       if (participantesError) throw participantesError;
 
-      setParticipantes((allParticipantes || []).filter(p => !excludedIds.has(p.id)));
+      const filterSet = ids ?? excludedIds;
+      setParticipantes((allParticipantes || []).filter(p => !filterSet.has(p.id)));
     } catch (error) {
       console.error('Erro ao carregar participantes:', error);
       toast({
@@ -158,6 +177,7 @@ const Sorteio = () => {
       const novosExcluidos = new Set(excludedIds);
       vencedores.forEach(v => novosExcluidos.add(v.id));
       setExcludedIds(novosExcluidos);
+      persistExcluded(novosExcluidos);
       setParticipantes(prev => prev.filter(p => !novosExcluidos.has(p.id)));
 
       // Mostrar vencedores
@@ -197,9 +217,10 @@ const Sorteio = () => {
       setWinners([]);
       setNumVencedores(1);
       setExcludedIds(new Set());
+      try { localStorage.removeItem(EXCLUDED_STORAGE_KEY); } catch {}
       
       // Recarregar participantes da base oficial
-      await loadParticipantes();
+      await loadParticipantes(new Set());
 
       toast({
         title: 'Sorteio reiniciado!',
