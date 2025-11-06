@@ -71,35 +71,17 @@ const Sorteio = () => {
     }
   };
 
-  const loadParticipantes = async (incluirSorteados = false) => {
+  const loadParticipantes = async () => {
     try {
-      // Buscar todos os participantes
+      // Buscar TODOS os participantes da base oficial
+      // O histórico (sorteados) não afeta quem pode ser sorteado
       const { data: allParticipantes, error: participantesError } = await supabase
         .from('participantes')
         .select('id, nome, setor, cidade');
 
       if (participantesError) throw participantesError;
 
-      if (incluirSorteados) {
-        // Carregar todos os participantes sem filtrar
-        setParticipantes(allParticipantes || []);
-      } else {
-        // Buscar IDs dos já sorteados
-        const { data: sorteados, error: sorteadosError } = await supabase
-          .from('sorteados')
-          .select('participante_id');
-
-        if (sorteadosError) throw sorteadosError;
-
-        const sorteadosIds = new Set(sorteados?.map(s => s.participante_id) || []);
-        
-        // Filtrar apenas participantes que não foram sorteados
-        const participantesElegiveis = allParticipantes?.filter(
-          p => !sorteadosIds.has(p.id)
-        ) || [];
-
-        setParticipantes(participantesElegiveis);
-      }
+      setParticipantes(allParticipantes || []);
     } catch (error) {
       console.error('Erro ao carregar participantes:', error);
       toast({
@@ -114,8 +96,8 @@ const Sorteio = () => {
   const realizarSorteio = async () => {
     if (participantes.length === 0) {
       toast({
-        title: 'Nenhum participante elegível',
-        description: 'Todos os participantes já foram sorteados ou não há participantes cadastrados.',
+        title: 'Nenhum participante disponível',
+        description: 'Não há participantes cadastrados na base oficial.',
         variant: 'destructive',
       });
       return;
@@ -133,7 +115,7 @@ const Sorteio = () => {
     if (numVencedores > participantes.length) {
       toast({
         title: 'Número inválido',
-        description: `Há apenas ${participantes.length} participante(s) elegível(is).`,
+        description: `Há apenas ${participantes.length} participante(s) disponível(is).`,
         variant: 'destructive',
       });
       return;
@@ -155,7 +137,7 @@ const Sorteio = () => {
       // Selecionar vencedores usando Fisher-Yates (100% aleatório e imparcial)
       const vencedores = selectRandomItems(participantes, numVencedores);
 
-      // Preparar dados para inserção
+      // Preparar dados para inserção no histórico
       const sorteadosData = vencedores.map(vencedor => ({
         participante_id: vencedor.id,
         nome: vencedor.nome,
@@ -164,7 +146,7 @@ const Sorteio = () => {
         sorteado_por: user?.id,
       }));
 
-      // Inserir na tabela de sorteados
+      // Inserir na tabela de histórico (sorteados)
       const { error } = await supabase
         .from('sorteados')
         .insert(sorteadosData);
@@ -178,11 +160,8 @@ const Sorteio = () => {
 
       toast({
         title: 'Sorteio realizado!',
-        description: `${numVencedores} vencedor(es) sorteado(s) com sucesso!`,
+        description: `${numVencedores} vencedor(es) sorteado(s) e registrado(s) no histórico!`,
       });
-
-      // Recarregar participantes para remover os sorteados
-      await loadParticipantes();
     } catch (error) {
       console.error('Erro ao realizar sorteio:', error);
       toast({
@@ -210,12 +189,12 @@ const Sorteio = () => {
       setWinners([]);
       setNumVencedores(1);
       
-      // Recarregar TODOS os participantes (incluir sorteados anteriormente)
-      await loadParticipantes(true);
+      // Recarregar participantes da base oficial
+      await loadParticipantes();
 
       toast({
         title: 'Sorteio reiniciado!',
-        description: 'Todos os participantes foram reativados. O histórico foi mantido.',
+        description: 'Pronto para novo sorteio. O histórico foi mantido.',
       });
     } catch (error) {
       console.error('Erro ao reiniciar sorteio:', error);
@@ -283,8 +262,8 @@ const Sorteio = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja recomeçar o sorteio?</AlertDialogTitle>
             <AlertDialogDescription>
-              Todos os participantes voltarão a ficar disponíveis para novos sorteios.
-              O histórico de ganhadores anteriores será mantido.
+              Isso limpará a tela atual e recarregará todos os participantes da base oficial.
+              O histórico completo de ganhadores será mantido para consultas futuras.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -371,7 +350,7 @@ const Sorteio = () => {
             <div className="space-y-4 bg-card p-8 rounded-lg border shadow-lg">
               <div className="text-center mb-4">
                 <p className="text-lg text-muted-foreground">
-                  {participantes.length} participante(s) elegível(is)
+                  {participantes.length} participante(s) disponível(is)
                 </p>
               </div>
 
