@@ -16,8 +16,6 @@ const Index = () => {
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
-    setor: "",
-    cidade: "",
     cpf: "",
   });
 
@@ -129,8 +127,8 @@ const Index = () => {
         .insert({
           nome: formData.nome,
           email: formData.email,
-          setor: formData.setor,
-          cidade: formData.cidade,
+          setor: 'Não informado',
+          cidade: 'Não informado',
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
         });
@@ -145,8 +143,6 @@ const Index = () => {
       setFormData({
         nome: "",
         email: "",
-        setor: "",
-        cidade: "",
         cpf: "",
       });
     } catch (error: any) {
@@ -254,32 +250,6 @@ const Index = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="seu@email.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="setor">Setor</Label>
-              <Input
-                id="setor"
-                name="setor"
-                type="text"
-                required
-                value={formData.setor}
-                onChange={handleChange}
-                placeholder="Digite seu setor"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cidade">Cidade</Label>
-              <Input
-                id="cidade"
-                name="cidade"
-                type="text"
-                required
-                value={formData.cidade}
-                onChange={handleChange}
-                placeholder="Digite sua cidade"
               />
             </div>
 
