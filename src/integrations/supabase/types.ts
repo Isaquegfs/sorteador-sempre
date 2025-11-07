@@ -138,16 +138,19 @@ export type Database = {
         Row: {
           id: string
           senha_criptografia_hash: string | null
+          tempo_confirmacao_segundos: number | null
           updated_at: string
         }
         Insert: {
           id?: string
           senha_criptografia_hash?: string | null
+          tempo_confirmacao_segundos?: number | null
           updated_at?: string
         }
         Update: {
           id?: string
           senha_criptografia_hash?: string | null
+          tempo_confirmacao_segundos?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -155,6 +158,8 @@ export type Database = {
       sorteados: {
         Row: {
           cidade: string
+          confirmado: boolean | null
+          confirmado_em: string | null
           id: string
           nome: string
           participante_id: string | null
@@ -164,6 +169,8 @@ export type Database = {
         }
         Insert: {
           cidade: string
+          confirmado?: boolean | null
+          confirmado_em?: string | null
           id?: string
           nome: string
           participante_id?: string | null
@@ -173,6 +180,8 @@ export type Database = {
         }
         Update: {
           cidade?: string
+          confirmado?: boolean | null
+          confirmado_em?: string | null
           id?: string
           nome?: string
           participante_id?: string | null

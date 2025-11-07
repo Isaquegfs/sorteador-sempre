@@ -31,6 +31,7 @@ const Configuracoes = () => {
   const [dataFechamento, setDataFechamento] = useState('');
   const [horaFechamento, setHoraFechamento] = useState('');
   const [fechamentoAutomaticoAtivo, setFechamentoAutomaticoAtivo] = useState(false);
+  const [tempoConfirmacao, setTempoConfirmacao] = useState(40);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,6 +65,16 @@ const Configuracoes = () => {
           setDataFechamento(format(dataAgendada, 'yyyy-MM-dd'));
           setHoraFechamento(format(dataAgendada, 'HH:mm'));
         }
+      }
+
+      // Carregar tempo de confirmação
+      const { data: configData } = await supabase
+        .from('sistema_config')
+        .select('tempo_confirmacao_segundos')
+        .single();
+
+      if (configData?.tempo_confirmacao_segundos) {
+        setTempoConfirmacao(configData.tempo_confirmacao_segundos);
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -373,6 +384,59 @@ const Configuracoes = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {/* Configuração de tempo de confirmação */}
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <h3 className="font-semibold mb-2">Tempo de Confirmação</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Defina o tempo (em segundos) que o contador regressivo exibirá após sortear um vencedor.
+              </p>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="tempo-confirmacao">Segundos</Label>
+                  <Input
+                    id="tempo-confirmacao"
+                    type="number"
+                    min="10"
+                    max="300"
+                    value={tempoConfirmacao}
+                    onChange={(e) => setTempoConfirmacao(parseInt(e.target.value) || 40)}
+                    className="bg-background/50 border-border/50"
+                    onBlur={async (e) => {
+                      const valor = parseInt(e.target.value) || 40;
+                      try {
+                        const { data: config } = await supabase
+                          .from('sistema_config')
+                          .select('id')
+                          .single();
+
+                        if (config) {
+                          await supabase
+                            .from('sistema_config')
+                            .update({ tempo_confirmacao_segundos: valor })
+                            .eq('id', config.id);
+                        } else {
+                          await supabase
+                            .from('sistema_config')
+                            .insert({ tempo_confirmacao_segundos: valor });
+                        }
+
+                        toast({
+                          title: 'Tempo atualizado',
+                          description: `Contador configurado para ${valor} segundos.`,
+                        });
+                      } catch (error) {
+                        console.error('Erro ao salvar tempo:', error);
+                        toast({
+                          title: 'Erro ao salvar',
+                          variant: 'destructive',
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
               <h3 className="font-semibold text-destructive mb-2">Limpar Tabela de Participantes</h3>
               <p className="text-sm text-muted-foreground mb-4">

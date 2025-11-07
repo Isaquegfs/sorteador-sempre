@@ -9,6 +9,7 @@ import { Loader2, Sparkles, RotateCcw } from 'lucide-react';
 import { LogoAnimation } from '@/components/sorteio/LogoAnimation';
 import { WinnerCard } from '@/components/sorteio/WinnerCard';
 import { InfinityLoader } from '@/components/sorteio/InfinityLoader';
+import { CountdownTimer } from '@/components/sorteio/CountdownTimer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ interface Participante {
 }
 
 interface Winner {
+  id: string;
   nome: string;
   setor: string;
   cidade: string;
@@ -46,6 +48,9 @@ const Sorteio = () => {
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [titleColor, setTitleColor] = useState<string>('#0033A1');
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [currentWinnerId, setCurrentWinnerId] = useState<string | null>(null);
+  const [countdownDuration, setCountdownDuration] = useState(40);
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
   const persistExcluded = (set: Set<string>) => {
     try {
@@ -69,6 +74,7 @@ const Sorteio = () => {
     setExcludedIds(stored);
     loadParticipantes(stored);
     loadActiveTema();
+    loadCountdownConfig();
   }, []);
 
   const loadActiveTema = async () => {
@@ -87,6 +93,21 @@ const Sorteio = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar tema ativo:', error);
+    }
+  };
+
+  const loadCountdownConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('sistema_config')
+        .select('tempo_confirmacao_segundos')
+        .single();
+
+      if (data?.tempo_confirmacao_segundos) {
+        setCountdownDuration(data.tempo_confirmacao_segundos);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configuração de tempo:', error);
     }
   };
 
@@ -181,10 +202,21 @@ const Sorteio = () => {
       setParticipantes(prev => prev.filter(p => !novosExcluidos.has(p.id)));
 
       // Mostrar vencedores
-      const vencedoresExibicao = vencedores.map(v => ({ nome: v.nome, setor: v.setor, cidade: v.cidade }));
+      const vencedoresExibicao = vencedores.map(v => ({ 
+        id: v.id,
+        nome: v.nome, 
+        setor: v.setor, 
+        cidade: v.cidade 
+      }));
       setWinners(vencedoresExibicao);
       setShowWinners(true);
       setIsAnimating(false);
+
+      // Iniciar contador para o primeiro vencedor
+      if (vencedoresExibicao.length > 0) {
+        setCurrentWinnerId(vencedoresExibicao[0].id);
+        setShowCountdown(true);
+      }
 
       toast({
         title: 'Sorteio realizado!',
@@ -207,6 +239,95 @@ const Sorteio = () => {
     setShowWinners(false);
     setWinners([]);
     setNumVencedores(1);
+    setShowCountdown(false);
+    setCurrentWinnerId(null);
+  };
+
+  const handleConfirmWinner = async () => {
+    if (!currentWinnerId) return;
+
+    try {
+      // Buscar o registro do sorteado por participante_id
+      const { data: sorteado, error: fetchError } = await supabase
+        .from('sorteados')
+        .select('id')
+        .eq('participante_id', currentWinnerId)
+        .order('sorteado_em', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Atualizar o registro com confirmação
+      const { error: updateError } = await supabase
+        .from('sorteados')
+        .update({
+          confirmado: true,
+          confirmado_em: new Date().toISOString(),
+        })
+        .eq('id', sorteado.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: 'Sorteado confirmado!',
+        description: 'A presença foi registrada com sucesso.',
+      });
+
+      setShowCountdown(false);
+      setCurrentWinnerId(null);
+    } catch (error) {
+      console.error('Erro ao confirmar sorteado:', error);
+      toast({
+        title: 'Erro ao confirmar',
+        description: 'Não foi possível registrar a confirmação.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRejectWinner = async () => {
+    if (!currentWinnerId) return;
+
+    try {
+      // Buscar o registro do sorteado por participante_id
+      const { data: sorteado, error: fetchError } = await supabase
+        .from('sorteados')
+        .select('id')
+        .eq('participante_id', currentWinnerId)
+        .order('sorteado_em', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Atualizar o registro com rejeição
+      const { error: updateError } = await supabase
+        .from('sorteados')
+        .update({
+          confirmado: false,
+          confirmado_em: new Date().toISOString(),
+        })
+        .eq('id', sorteado.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: 'Sorteado não confirmado',
+        description: 'A ausência foi registrada.',
+        variant: 'destructive',
+      });
+
+      setShowCountdown(false);
+      setCurrentWinnerId(null);
+    } catch (error) {
+      console.error('Erro ao rejeitar sorteado:', error);
+      toast({
+        title: 'Erro ao registrar',
+        description: 'Não foi possível registrar a ausência.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleResetSorteio = async () => {
@@ -267,6 +388,16 @@ const Sorteio = () => {
           background: 'rgba(0, 0, 0, 0.15)',
         }}
       />
+
+      {/* Contador de confirmação */}
+      {showCountdown && currentWinnerId && (
+        <CountdownTimer
+          duration={countdownDuration}
+          onConfirm={handleConfirmWinner}
+          onReject={handleRejectWinner}
+          winnerName={winners.find(w => w.id === currentWinnerId)?.nome || ''}
+        />
+      )}
 
       {/* Botão Recomeçar Sorteio - Discreto no canto superior direito */}
       <div className="absolute top-4 right-4 z-10">
