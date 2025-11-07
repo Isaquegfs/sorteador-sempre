@@ -11,10 +11,8 @@ import { PublicPageLayout } from '@/components/PublicPageLayout';
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    nome: '',
     email: '',
     password: '',
   });
@@ -24,42 +22,21 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: 'Login realizado com sucesso!',
-        });
-        navigate('/admin');
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/admin`,
-            data: {
-              nome: formData.nome,
-            },
-          },
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: 'Cadastro realizado!',
-          description: 'Você foi cadastrado com sucesso.',
-        });
-        navigate('/admin');
-      }
+      toast({
+        title: 'Login realizado com sucesso!',
+      });
+      navigate('/admin');
     } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: error.message,
+        title: 'Erro ao fazer login',
+        description: error.message || 'Verifique suas credenciais e tente novamente.',
         variant: 'destructive',
       });
     } finally {
@@ -80,28 +57,13 @@ const Auth = () => {
       </Button>
 
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">
-          {isLogin ? 'Acesso Administrativo' : 'Criar Conta'}
-        </h1>
+        <h1 className="text-2xl font-bold">Acesso Administrativo</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          {isLogin ? 'Entre com suas credenciais' : 'Cadastre-se no sistema'}
+          Entre com suas credenciais
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome completo</Label>
-              <Input
-                id="nome"
-                type="text"
-                required
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              />
-            </div>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>
             <Input
@@ -125,19 +87,9 @@ const Auth = () => {
           </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Carregando...' : isLogin ? 'Entrar' : 'Cadastrar'}
+          {isLoading ? 'Carregando...' : 'Entrar'}
         </Button>
       </form>
-
-      <div className="text-center">
-        <button
-          type="button"
-          onClick={() => setIsLogin(!isLogin)}
-          className="text-sm text-primary hover:underline"
-        >
-          {isLogin ? 'Criar uma conta' : 'Já tenho uma conta'}
-        </button>
-      </div>
     </PublicPageLayout>
   );
 };
