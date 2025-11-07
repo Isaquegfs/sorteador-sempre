@@ -71,8 +71,8 @@ const Index = () => {
       if (elegError) {
         console.error('Erro ao verificar elegibilidade:', elegError);
         toast({
-          title: "Erro ao verificar CPF",
-          description: "Tente novamente mais tarde.",
+          title: "Erro ao verificar elegibilidade",
+          description: "Não foi possível verificar o CPF no sistema. Por favor, tente novamente.",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -149,11 +149,32 @@ const Index = () => {
         cidade: "",
         cpf: "",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao cadastrar:', error);
+      
+      let errorMessage = "Ocorreu um erro inesperado. Por favor, tente novamente.";
+      
+      // Tratar erros específicos do Supabase
+      if (error?.code === '23505') {
+        errorMessage = "CPF já cadastrado no sistema.";
+      } else if (error?.code === '23503') {
+        errorMessage = "Dados de referência inválidos. Verifique as informações e tente novamente.";
+      } else if (error?.code === 'PGRST301') {
+        errorMessage = "Formulário de cadastro está fechado no momento.";
+      } else if (error?.message) {
+        // Tratar mensagens específicas de RLS ou outras
+        if (error.message.includes('permission denied') || error.message.includes('policy')) {
+          errorMessage = "Você não tem permissão para realizar esta operação no momento.";
+        } else if (error.message.includes('invalid input')) {
+          errorMessage = "Dados inválidos. Verifique as informações e tente novamente.";
+        } else if (error.message.includes('network')) {
+          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+        }
+      }
+      
       toast({
         title: "Erro ao cadastrar",
-        description: "Tente novamente mais tarde.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
