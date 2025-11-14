@@ -153,7 +153,9 @@ const Usuarios = () => {
 
       setOpenCreateDialog(false);
       setNewUser({ nome: '', email: '', senha: '', role: 'moderator' });
-      loadUsuarios();
+      
+      // Recarregar usuários para garantir dados atualizados
+      await loadUsuarios();
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
       toast({
