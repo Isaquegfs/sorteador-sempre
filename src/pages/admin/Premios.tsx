@@ -64,6 +64,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -106,6 +107,7 @@ export default function Premios() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<ImportPreviewItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [temCabecalho, setTemCabecalho] = useState(true);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -436,11 +438,8 @@ export default function Premios() {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-        // Pular primeira linha se for cabeçalho
-        const startRow = jsonData[0] && (
-          jsonData[0][0]?.toString().toLowerCase().includes('nome') ||
-          jsonData[0][0]?.toString().toLowerCase().includes('prêmio')
-        ) ? 1 : 0;
+        // Pular primeira linha se tem cabeçalho
+        const startRow = temCabecalho ? 1 : 0;
 
         const preview: ImportPreviewItem[] = [];
 
@@ -548,6 +547,7 @@ export default function Premios() {
       setShowImportDialog(false);
       setImportFile(null);
       setImportPreview([]);
+      setTemCabecalho(true);
       loadPremios();
     } catch (error: any) {
       toast({
@@ -564,6 +564,7 @@ export default function Premios() {
     setShowImportDialog(false);
     setImportFile(null);
     setImportPreview([]);
+    setTemCabecalho(true);
   };
 
   const getStatusVariant = (
@@ -862,6 +863,18 @@ export default function Premios() {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Opção de Cabeçalho */}
+            <div className="flex items-center space-x-2 pb-2 border-b">
+              <Checkbox
+                id="tem-cabecalho"
+                checked={temCabecalho}
+                onCheckedChange={(checked) => setTemCabecalho(checked as boolean)}
+              />
+              <Label htmlFor="tem-cabecalho" className="cursor-pointer font-normal">
+                O arquivo contém linha de cabeçalho
+              </Label>
+            </div>
+
             {/* Upload */}
             <div className="space-y-2">
               <Label htmlFor="file-upload">Arquivo XLSX</Label>
