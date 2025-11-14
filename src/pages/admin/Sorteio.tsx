@@ -47,6 +47,11 @@ const Sorteio = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [titleColor, setTitleColor] = useState<string>('#0033A1');
+  const [titleStyle, setTitleStyle] = useState<'cor' | 'degrade' | 'textura'>('cor');
+  const [degradeInicio, setDegradeInicio] = useState<string>('#F27435');
+  const [degradeFim, setDegradeFim] = useState<string>('#0033A1');
+  const [degradeDirecao, setDegradeDirecao] = useState<string>('to right');
+  const [texturaUrl, setTexturaUrl] = useState<string | null>(null);
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [showCountdown, setShowCountdown] = useState(false);
   const [currentWinnerId, setCurrentWinnerId] = useState<string | null>(null);
@@ -81,7 +86,7 @@ const Sorteio = () => {
     try {
       const { data } = await supabase
         .from('temas')
-        .select('imagem_url, cor_titulo')
+        .select('imagem_url, cor_titulo, estilo_titulo, degrade_inicio, degrade_fim, degrade_direcao, textura_url')
         .eq('ativo', true)
         .single();
 
@@ -90,6 +95,21 @@ const Sorteio = () => {
       }
       if (data?.cor_titulo) {
         setTitleColor(data.cor_titulo);
+      }
+      if (data?.estilo_titulo) {
+        setTitleStyle(data.estilo_titulo as 'cor' | 'degrade' | 'textura');
+      }
+      if (data?.degrade_inicio) {
+        setDegradeInicio(data.degrade_inicio);
+      }
+      if (data?.degrade_fim) {
+        setDegradeFim(data.degrade_fim);
+      }
+      if (data?.degrade_direcao) {
+        setDegradeDirecao(data.degrade_direcao);
+      }
+      if (data?.textura_url) {
+        setTexturaUrl(data.textura_url);
       }
     } catch (error) {
       console.error('Erro ao carregar tema ativo:', error);
@@ -440,7 +460,27 @@ const Sorteio = () => {
         {/* Título */}
         <h1 
           className="text-6xl font-bold text-center"
-          style={{ color: titleColor }}
+          style={
+            titleStyle === 'cor'
+              ? { color: titleColor }
+              : titleStyle === 'degrade'
+              ? {
+                  background: `linear-gradient(${degradeDirecao}, ${degradeInicio}, ${degradeFim})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }
+              : titleStyle === 'textura' && texturaUrl
+              ? {
+                  backgroundImage: `url(${texturaUrl})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }
+              : { color: titleColor }
+          }
         >
           SORTEADOR
         </h1>

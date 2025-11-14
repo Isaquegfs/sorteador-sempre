@@ -7,6 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,6 +42,11 @@ interface Tema {
   imagem_url: string;
   logo_url: string | null;
   cor_titulo: string;
+  estilo_titulo: 'cor' | 'degrade' | 'textura';
+  degrade_inicio: string | null;
+  degrade_fim: string | null;
+  degrade_direcao: string | null;
+  textura_url: string | null;
   ativo: boolean;
   created_at: string;
 }
@@ -45,11 +58,17 @@ const Temas = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [estiloTitulo, setEstiloTitulo] = useState<'cor' | 'degrade' | 'textura'>('cor');
   const [corTitulo, setCorTitulo] = useState('#0033A1');
+  const [degradeInicio, setDegradeInicio] = useState('#F27435');
+  const [degradeFim, setDegradeFim] = useState('#0033A1');
+  const [degradeDirecao, setDegradeDirecao] = useState('to right');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [texturaFile, setTexturaFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [texturaPreviewUrl, setTexturaPreviewUrl] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -66,7 +85,7 @@ const Temas = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemas(data || []);
+      setTemas((data as Tema[]) || []);
     } catch (error) {
       console.error('Erro ao carregar temas:', error);
       toast({
@@ -120,13 +139,40 @@ const Temas = () => {
     }
   };
 
+  const handleTexturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'A textura deve ter no máximo 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setTexturaFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTexturaPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleEdit = (tema: Tema) => {
     setEditingId(tema.id);
     setNome(tema.nome);
     setDescricao(tema.descricao || '');
+    setEstiloTitulo(tema.estilo_titulo);
     setCorTitulo(tema.cor_titulo);
+    setDegradeInicio(tema.degrade_inicio || '#F27435');
+    setDegradeFim(tema.degrade_fim || '#0033A1');
+    setDegradeDirecao(tema.degrade_direcao || 'to right');
     setPreviewUrl(tema.imagem_url);
-    setLogoPreviewUrl(tema.logo_url);
+    setLogoPreviewUrl(tema.logo_url || null);
+    setTexturaPreviewUrl(tema.textura_url || null);
+    
     // Scroll para o formulário
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -135,11 +181,17 @@ const Temas = () => {
     setEditingId(null);
     setNome('');
     setDescricao('');
+    setEstiloTitulo('cor');
     setCorTitulo('#0033A1');
+    setDegradeInicio('#F27435');
+    setDegradeFim('#0033A1');
+    setDegradeDirecao('to right');
     setImageFile(null);
     setLogoFile(null);
+    setTexturaFile(null);
     setPreviewUrl(null);
     setLogoPreviewUrl(null);
+    setTexturaPreviewUrl(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,6 +221,7 @@ const Temas = () => {
     try {
       let publicUrl = previewUrl; // Manter URL existente se não houver nova imagem
       let logoPublicUrl = logoPreviewUrl; // Manter URL existente se não houver nova logo
+      let texturaPublicUrl = texturaPreviewUrl; // Manter URL existente se não houver nova textura
 
       // Upload da imagem de fundo (se houver arquivo novo)
       if (imageFile) {
@@ -209,6 +262,25 @@ const Temas = () => {
         logoPublicUrl = logoUrl;
       }
 
+      // Upload da textura (se fornecida)
+      if (texturaFile) {
+        const texturaExt = texturaFile.name.split('.').pop();
+        const texturaFileName = `textura_${Date.now()}.${texturaExt}`;
+        const texturaFilePath = `${texturaFileName}`;
+
+        const { error: texturaUploadError } = await supabase.storage
+          .from('temas')
+          .upload(texturaFilePath, texturaFile);
+
+        if (texturaUploadError) throw texturaUploadError;
+
+        const { data: { publicUrl: texturaUrl } } = supabase.storage
+          .from('temas')
+          .getPublicUrl(texturaFilePath);
+        
+        texturaPublicUrl = texturaUrl;
+      }
+
       if (editingId) {
         // Atualizar tema existente
         const { error: updateError } = await supabase
@@ -219,6 +291,11 @@ const Temas = () => {
             imagem_url: publicUrl,
             logo_url: logoPublicUrl,
             cor_titulo: corTitulo,
+            estilo_titulo: estiloTitulo,
+            degrade_inicio: estiloTitulo === 'degrade' ? degradeInicio : null,
+            degrade_fim: estiloTitulo === 'degrade' ? degradeFim : null,
+            degrade_direcao: estiloTitulo === 'degrade' ? degradeDirecao : null,
+            textura_url: estiloTitulo === 'textura' ? texturaPublicUrl : null,
           })
           .eq('id', editingId);
 
@@ -237,6 +314,11 @@ const Temas = () => {
             imagem_url: publicUrl!,
             logo_url: logoPublicUrl,
             cor_titulo: corTitulo,
+            estilo_titulo: estiloTitulo,
+            degrade_inicio: estiloTitulo === 'degrade' ? degradeInicio : null,
+            degrade_fim: estiloTitulo === 'degrade' ? degradeFim : null,
+            degrade_direcao: estiloTitulo === 'degrade' ? degradeDirecao : null,
+            textura_url: estiloTitulo === 'textura' ? texturaPublicUrl : null,
           });
 
         if (insertError) throw insertError;
@@ -401,29 +483,153 @@ const Temas = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cor-titulo">Cor do Título "SORTEADOR"</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  id="cor-titulo"
-                  type="color"
-                  value={corTitulo}
-                  onChange={(e) => setCorTitulo(e.target.value)}
-                  disabled={isUploading}
-                  className="w-20 h-10 cursor-pointer"
-                />
-                <Input
-                  type="text"
-                  value={corTitulo}
-                  onChange={(e) => setCorTitulo(e.target.value)}
-                  disabled={isUploading}
-                  placeholder="#0033A1"
-                  className="flex-1"
-                />
+            <div className="space-y-4 border rounded-lg p-4">
+              <div className="space-y-2">
+                <Label>Estilo do Título "SORTEADOR"</Label>
+                <Select value={estiloTitulo} onValueChange={(value: 'cor' | 'degrade' | 'textura') => setEstiloTitulo(value)} disabled={isUploading}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cor">Cor Sólida</SelectItem>
+                    <SelectItem value="degrade">Degradê</SelectItem>
+                    <SelectItem value="textura">Textura/Imagem</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Escolha como deseja personalizar o título na tela de sorteio
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Escolha a cor que será aplicada ao título "SORTEADOR" na tela de sorteio
-              </p>
+
+              {estiloTitulo === 'cor' && (
+                <div className="space-y-2">
+                  <Label htmlFor="cor-titulo">Cor do Título</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="cor-titulo"
+                      type="color"
+                      value={corTitulo}
+                      onChange={(e) => setCorTitulo(e.target.value)}
+                      disabled={isUploading}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={corTitulo}
+                      onChange={(e) => setCorTitulo(e.target.value)}
+                      disabled={isUploading}
+                      placeholder="#0033A1"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {estiloTitulo === 'degrade' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="degrade-inicio">Cor Inicial</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          id="degrade-inicio"
+                          type="color"
+                          value={degradeInicio}
+                          onChange={(e) => setDegradeInicio(e.target.value)}
+                          disabled={isUploading}
+                          className="w-16 h-10 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={degradeInicio}
+                          onChange={(e) => setDegradeInicio(e.target.value)}
+                          disabled={isUploading}
+                          placeholder="#F27435"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="degrade-fim">Cor Final</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          id="degrade-fim"
+                          type="color"
+                          value={degradeFim}
+                          onChange={(e) => setDegradeFim(e.target.value)}
+                          disabled={isUploading}
+                          className="w-16 h-10 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={degradeFim}
+                          onChange={(e) => setDegradeFim(e.target.value)}
+                          disabled={isUploading}
+                          placeholder="#0033A1"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Direção do Degradê</Label>
+                    <RadioGroup value={degradeDirecao} onValueChange={setDegradeDirecao} disabled={isUploading} className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="to right" id="to-right" />
+                        <Label htmlFor="to-right" className="cursor-pointer">→ Esquerda para Direita</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="to left" id="to-left" />
+                        <Label htmlFor="to-left" className="cursor-pointer">← Direita para Esquerda</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="to bottom" id="to-bottom" />
+                        <Label htmlFor="to-bottom" className="cursor-pointer">↓ Cima para Baixo</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="to top" id="to-top" />
+                        <Label htmlFor="to-top" className="cursor-pointer">↑ Baixo para Cima</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="to bottom right" id="to-bottom-right" />
+                        <Label htmlFor="to-bottom-right" className="cursor-pointer">↘ Diagonal Superior Direita</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="to top left" id="to-top-left" />
+                        <Label htmlFor="to-top-left" className="cursor-pointer">↖ Diagonal Inferior Esquerda</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+              )}
+
+              {estiloTitulo === 'textura' && (
+                <div className="space-y-2">
+                  <Label htmlFor="textura">Imagem de Textura {editingId && texturaPreviewUrl ? '(opcional - deixe em branco para manter a atual)' : ''}</Label>
+                  <Input
+                    id="textura"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleTexturaChange}
+                    disabled={isUploading}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Escolha uma imagem para usar como textura no texto (PNG ou JPG, máximo 5MB)
+                  </p>
+                  {texturaPreviewUrl && (
+                    <div className="mt-2">
+                      <Label>Prévia da Textura</Label>
+                      <div className="relative w-32 h-32 rounded-lg overflow-hidden border mt-1">
+                        <img
+                          src={texturaPreviewUrl}
+                          alt="Prévia da textura"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
