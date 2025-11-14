@@ -168,18 +168,21 @@ export type Database = {
         Row: {
           id: string
           senha_criptografia_hash: string | null
+          sorteio_com_premios: boolean | null
           tempo_confirmacao_segundos: number | null
           updated_at: string
         }
         Insert: {
           id?: string
           senha_criptografia_hash?: string | null
+          sorteio_com_premios?: boolean | null
           tempo_confirmacao_segundos?: number | null
           updated_at?: string
         }
         Update: {
           id?: string
           senha_criptografia_hash?: string | null
+          sorteio_com_premios?: boolean | null
           tempo_confirmacao_segundos?: number | null
           updated_at?: string
         }
@@ -193,6 +196,7 @@ export type Database = {
           id: string
           nome: string
           participante_id: string | null
+          premio_id: string | null
           setor: string
           sorteado_em: string
           sorteado_por: string | null
@@ -204,6 +208,7 @@ export type Database = {
           id?: string
           nome: string
           participante_id?: string | null
+          premio_id?: string | null
           setor: string
           sorteado_em?: string
           sorteado_por?: string | null
@@ -215,6 +220,7 @@ export type Database = {
           id?: string
           nome?: string
           participante_id?: string | null
+          premio_id?: string | null
           setor?: string
           sorteado_em?: string
           sorteado_por?: string | null
@@ -225,6 +231,13 @@ export type Database = {
             columns: ["participante_id"]
             isOneToOne: false
             referencedRelation: "participantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sorteados_premio_id_fkey"
+            columns: ["premio_id"]
+            isOneToOne: false
+            referencedRelation: "premios"
             referencedColumns: ["id"]
           },
           {

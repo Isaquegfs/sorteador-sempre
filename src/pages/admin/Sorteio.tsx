@@ -33,6 +33,18 @@ interface Winner {
   nome: string;
   setor: string;
   cidade: string;
+  premio?: {
+    id: string;
+    nome: string;
+    descricao: string | null;
+  };
+}
+
+interface Premio {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  ordem: number;
 }
 
 const Sorteio = () => {
@@ -56,6 +68,9 @@ const Sorteio = () => {
   const [showCountdown, setShowCountdown] = useState(false);
   const [currentWinnerId, setCurrentWinnerId] = useState<string | null>(null);
   const [countdownDuration, setCountdownDuration] = useState(40);
+  const [sorteioComPremios, setSorteioComPremios] = useState(false);
+  const [premiosDisponiveis, setPremiosDisponiveis] = useState<Premio[]>([]);
+  const [proximoPremio, setProximoPremio] = useState<Premio | null>(null);
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
   const persistExcluded = (set: Set<string>) => {
     try {
@@ -80,7 +95,14 @@ const Sorteio = () => {
     loadParticipantes(stored);
     loadActiveTema();
     loadCountdownConfig();
+    loadSorteioConfig();
   }, []);
+
+  useEffect(() => {
+    if (sorteioComPremios) {
+      loadPremiosDisponiveis();
+    }
+  }, [sorteioComPremios]);
 
   const loadActiveTema = async () => {
     try {
@@ -127,7 +149,60 @@ const Sorteio = () => {
         setCountdownDuration(data.tempo_confirmacao_segundos);
       }
     } catch (error) {
-      // Silently handle error
+      console.error('Erro ao carregar config:', error);
+    }
+  };
+
+  const loadSorteioConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('sistema_config')
+        .select('sorteio_com_premios')
+        .single();
+
+      if (data) {
+        setSorteioComPremios(data.sorteio_com_premios || false);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar config de sorteio:', error);
+    }
+  };
+
+  const loadPremiosDisponiveis = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('premios')
+        .select('*')
+        .eq('status', 'Disponível')
+        .order('ordem', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setPremiosDisponiveis(data);
+        setProximoPremio(data[0]);
+      } else {
+        // Não há prêmios disponíveis, desativar modo prêmios
+        toast({
+          title: 'Aviso',
+          description: 'Não há prêmios disponíveis. O modo sorteio com prêmios foi desativado.',
+          variant: 'destructive',
+        });
+        setSorteioComPremios(false);
+        const { data: configData } = await supabase
+          .from('sistema_config')
+          .select('id')
+          .single();
+        
+        if (configData) {
+          await supabase
+            .from('sistema_config')
+            .update({ sorteio_com_premios: false })
+            .eq('id', configData.id);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar prêmios:', error);
     }
   };
 
@@ -262,7 +337,7 @@ const Sorteio = () => {
       // Buscar o registro do sorteado por participante_id
       const { data: sorteado, error: fetchError } = await supabase
         .from('sorteados')
-        .select('id')
+        .select('id, premio_id')
         .eq('participante_id', currentWinnerId)
         .order('sorteado_em', { ascending: false })
         .limit(1)
@@ -281,13 +356,24 @@ const Sorteio = () => {
 
       if (updateError) throw updateError;
 
+      // Atualizar status do prêmio para "Sorteado"
+      if (sorteado.premio_id) {
+        await supabase
+          .from('premios')
+          .update({ status: 'Sorteado' })
+          .eq('id', sorteado.premio_id);
+      }
+
       toast({
         title: 'Sorteado confirmado!',
-        description: 'A presença foi registrada com sucesso.',
+        description: 'A presença foi registrada e o prêmio foi entregue.',
       });
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
+
+      // Atualizar lista de prêmios
+      await loadPremiosDisponiveis();
     } catch (error) {
       toast({
         title: 'Erro ao confirmar',
@@ -304,7 +390,7 @@ const Sorteio = () => {
       // Buscar o registro do sorteado por participante_id
       const { data: sorteado, error: fetchError } = await supabase
         .from('sorteados')
-        .select('id')
+        .select('id, premio_id')
         .eq('participante_id', currentWinnerId)
         .order('sorteado_em', { ascending: false })
         .limit(1)
@@ -323,14 +409,37 @@ const Sorteio = () => {
 
       if (updateError) throw updateError;
 
+      // Atualizar status do prêmio para "Reprogramado" e mover para o final da lista
+      if (sorteado.premio_id) {
+        // Buscar maior ordem atual
+        const { data: premios } = await supabase
+          .from('premios')
+          .select('ordem')
+          .order('ordem', { ascending: false })
+          .limit(1);
+
+        const novaOrdem = premios && premios.length > 0 ? premios[0].ordem + 1 : 1;
+
+        await supabase
+          .from('premios')
+          .update({ 
+            status: 'Reprogramado',
+            ordem: novaOrdem
+          })
+          .eq('id', sorteado.premio_id);
+      }
+
       toast({
         title: 'Sorteado não confirmado',
-        description: 'A ausência foi registrada.',
+        description: 'A ausência foi registrada. Prêmio reprogramado para o final da lista.',
         variant: 'destructive',
       });
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
+
+      // Atualizar lista de prêmios
+      await loadPremiosDisponiveis();
     } catch (error) {
       toast({
         title: 'Erro ao registrar',
@@ -480,6 +589,27 @@ const Sorteio = () => {
           SORTEADOR
         </h1>
 
+        {/* Próximo prêmio a ser sorteado */}
+        {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && (
+          <div className="text-center mb-8 p-6 bg-card/50 rounded-lg border-2 border-primary/20 animate-fade-in">
+            <p className="text-lg text-muted-foreground mb-2">Próximo prêmio a ser sorteado:</p>
+            <h3 className="text-3xl font-bold text-primary mb-2">{proximoPremio.nome}</h3>
+            {proximoPremio.descricao && (
+              <p className="text-muted-foreground">{proximoPremio.descricao}</p>
+            )}
+          </div>
+        )}
+
+        {/* Countdown Timer */}
+        {showCountdown && currentWinnerId && winners.length > 0 && sorteioComPremios && (
+          <CountdownTimer
+            duration={countdownDuration}
+            onConfirm={handleConfirmWinner}
+            onReject={handleRejectWinner}
+            winnerName={winners[0]?.nome || ''}
+          />
+        )}
+
         {/* Loading state durante sorteio */}
         {isSorteando && !showWinners && (
           <InfinityLoader />
@@ -516,6 +646,7 @@ const Sorteio = () => {
                   nome={winner.nome}
                   setor={winner.setor}
                   cidade={winner.cidade}
+                  premio={winner.premio}
                   delay={index * 200}
                   onFlip={() => {
                     if (!showCountdown && !currentWinnerId) {

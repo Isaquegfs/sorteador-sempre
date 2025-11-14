@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Gift } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface WinnerCardProps {
   nome: string;
   setor: string;
   cidade: string;
+  premio?: {
+    id: string;
+    nome: string;
+    descricao: string | null;
+  };
   delay: number;
   onFlip?: () => void;
 }
 
-export const WinnerCard = ({ nome, setor, cidade, delay, onFlip }: WinnerCardProps) => {
+export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip }: WinnerCardProps) => {
   const [isRevealed, setIsRevealed] = useState(false);
 
   const handleFlip = () => {
@@ -77,6 +83,22 @@ export const WinnerCard = ({ nome, setor, cidade, delay, onFlip }: WinnerCardPro
                     </p>
                   </div>
                 </div>
+
+                {premio && (
+                  <>
+                    <Separator className="my-4" />
+                    <div className="text-center space-y-2 bg-primary/5 p-4 rounded-lg">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Gift className="h-5 w-5 text-primary" />
+                        <p className="text-sm text-muted-foreground font-medium">Prêmio</p>
+                      </div>
+                      <p className="text-xl font-bold text-primary">{premio.nome}</p>
+                      {premio.descricao && (
+                        <p className="text-sm text-muted-foreground">{premio.descricao}</p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

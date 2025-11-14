@@ -32,6 +32,8 @@ const Configuracoes = () => {
   const [horaFechamento, setHoraFechamento] = useState('');
   const [fechamentoAutomaticoAtivo, setFechamentoAutomaticoAtivo] = useState(false);
   const [tempoConfirmacao, setTempoConfirmacao] = useState(40);
+  const [sorteioComPremios, setSorteioComPremios] = useState(false);
+  const [sistemaConfigId, setSistemaConfigId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,14 +69,18 @@ const Configuracoes = () => {
         }
       }
 
-      // Carregar tempo de confirmação
+      // Carregar tempo de confirmação e sorteio com prêmios
       const { data: configData } = await supabase
         .from('sistema_config')
-        .select('tempo_confirmacao_segundos')
+        .select('id, tempo_confirmacao_segundos, sorteio_com_premios')
         .single();
 
-      if (configData?.tempo_confirmacao_segundos) {
-        setTempoConfirmacao(configData.tempo_confirmacao_segundos);
+      if (configData) {
+        setSistemaConfigId(configData.id);
+        if (configData.tempo_confirmacao_segundos) {
+          setTempoConfirmacao(configData.tempo_confirmacao_segundos);
+        }
+        setSorteioComPremios(configData.sorteio_com_premios || false);
       }
     } catch (error) {
       toast({
@@ -367,6 +373,48 @@ const Configuracoes = () => {
               'Salvar Configurações'
             )}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Configurações do Sorteio
+          </CardTitle>
+          <CardDescription>
+            Configure o comportamento do sorteador
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="tempoConfirmacao">Tempo de Confirmação (segundos)</Label>
+            <Input
+              id="tempoConfirmacao"
+              type="number"
+              min={1}
+              max={300}
+              value={tempoConfirmacao}
+              onChange={(e) => setTempoConfirmacao(Number(e.target.value))}
+            />
+            <p className="text-sm text-muted-foreground">
+              Tempo usado apenas no modo com prêmios
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between space-x-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="sorteioComPremios">Ativar sorteio com prêmios</Label>
+              <p className="text-sm text-muted-foreground">
+                Quando ativado, o sorteio exibirá prêmios, timer de confirmação e validação obrigatória
+              </p>
+            </div>
+            <Switch
+              id="sorteioComPremios"
+              checked={sorteioComPremios}
+              onCheckedChange={setSorteioComPremios}
+            />
+          </div>
         </CardContent>
       </Card>
 
