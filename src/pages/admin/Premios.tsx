@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Gift, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Gift, Plus, Pencil, Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,6 +87,13 @@ export default function Premios() {
     status: 'Disponível',
   });
   const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     loadPremios();
@@ -253,6 +277,111 @@ export default function Premios() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = premios.findIndex((p) => p.id === active.id);
+    const newIndex = premios.findIndex((p) => p.id === over.id);
+
+    const newPremios = arrayMove(premios, oldIndex, newIndex);
+    
+    // Atualizar estado local imediatamente para feedback visual
+    setPremios(newPremios);
+
+    // Salvar no banco de dados
+    try {
+      const updates = newPremios.map((premio, index) => ({
+        id: premio.id,
+        ordem: index + 1,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('premios')
+          .update({ ordem: update.ordem })
+          .eq('id', update.id);
+      }
+
+      toast({
+        title: 'Ordem atualizada',
+        description: 'A ordem dos prêmios foi atualizada com sucesso',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao reordenar',
+        description: error.message,
+        variant: 'destructive',
+      });
+      loadPremios(); // Recarregar em caso de erro
+    }
+  };
+
+  const handleMoveUp = async (index: number) => {
+    if (index === 0) return;
+
+    const newPremios = [...premios];
+    [newPremios[index - 1], newPremios[index]] = [newPremios[index], newPremios[index - 1]];
+    
+    setPremios(newPremios);
+
+    try {
+      await supabase
+        .from('premios')
+        .update({ ordem: index })
+        .eq('id', newPremios[index - 1].id);
+
+      await supabase
+        .from('premios')
+        .update({ ordem: index + 1 })
+        .eq('id', newPremios[index].id);
+
+      toast({
+        title: 'Prêmio movido para cima',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao mover prêmio',
+        description: error.message,
+        variant: 'destructive',
+      });
+      loadPremios();
+    }
+  };
+
+  const handleMoveDown = async (index: number) => {
+    if (index === premios.length - 1) return;
+
+    const newPremios = [...premios];
+    [newPremios[index], newPremios[index + 1]] = [newPremios[index + 1], newPremios[index]];
+    
+    setPremios(newPremios);
+
+    try {
+      await supabase
+        .from('premios')
+        .update({ ordem: index + 2 })
+        .eq('id', newPremios[index].id);
+
+      await supabase
+        .from('premios')
+        .update({ ordem: index + 1 })
+        .eq('id', newPremios[index + 1].id);
+
+      toast({
+        title: 'Prêmio movido para baixo',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao mover prêmio',
+        description: error.message,
+        variant: 'destructive',
+      });
+      loadPremios();
+    }
+  };
+
   const handleCancel = () => {
     setFormData({
       nome: '',
@@ -278,6 +407,113 @@ export default function Premios() {
       default:
         return 'default';
     }
+  };
+
+  // Componente para linha arrastável
+  interface SortableRowProps {
+    premio: Premio;
+    index: number;
+  }
+
+  const SortableRow = ({ premio, index }: SortableRowProps) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: premio.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <TableRow ref={setNodeRef} style={style} className={isDragging ? 'bg-muted/50' : ''}>
+        <TableCell className="w-12">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </TableCell>
+        <TableCell className="font-bold">{index + 1}</TableCell>
+        <TableCell className="font-medium">{premio.nome}</TableCell>
+        <TableCell>
+          {premio.descricao
+            ? premio.descricao.substring(0, 50) +
+              (premio.descricao.length > 50 ? '...' : '')
+            : '-'}
+        </TableCell>
+        <TableCell>
+          <Badge variant={getStatusVariant(premio.status)}>
+            {premio.status}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex gap-1 justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleMoveUp(index)}
+              disabled={index === 0}
+              title="Mover para cima"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleMoveDown(index)}
+              disabled={index === premios.length - 1}
+              title="Mover para baixo"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleEdit(premio)}
+              title="Editar"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" title="Excluir">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Confirmar exclusão
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir o prêmio "
+                    {premio.nome}"? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(premio.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
   };
 
   return (
@@ -383,6 +619,9 @@ export default function Premios() {
             <Gift className="h-5 w-5" />
             Lista de Prêmios
           </CardTitle>
+          <CardDescription>
+            Arraste as linhas para reordenar ou use os botões de seta
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -394,74 +633,34 @@ export default function Premios() {
               Nenhum prêmio cadastrado ainda
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-20">Ordem</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="w-32">Status</TableHead>
-                  <TableHead className="text-right w-32">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {premios.map((premio) => (
-                  <TableRow key={premio.id}>
-                    <TableCell className="font-bold">{premio.ordem}</TableCell>
-                    <TableCell className="font-medium">{premio.nome}</TableCell>
-                    <TableCell>
-                      {premio.descricao
-                        ? premio.descricao.substring(0, 50) +
-                          (premio.descricao.length > 50 ? '...' : '')
-                        : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(premio.status)}>
-                        {premio.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(premio)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Confirmar exclusão
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja excluir o prêmio "
-                                {premio.nome}"? Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(premio.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-20">Ordem</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="text-right w-48">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  <SortableContext
+                    items={premios.map(p => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {premios.map((premio, index) => (
+                      <SortableRow key={premio.id} premio={premio} index={index} />
+                    ))}
+                  </SortableContext>
+                </TableBody>
+              </Table>
+            </DndContext>
           )}
         </CardContent>
       </Card>
