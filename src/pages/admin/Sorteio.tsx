@@ -212,12 +212,6 @@ const Sorteio = () => {
       setShowWinners(true);
       setIsAnimating(false);
 
-      // Iniciar contador para o primeiro vencedor
-      if (vencedoresExibicao.length > 0) {
-        setCurrentWinnerId(vencedoresExibicao[0].id);
-        setShowCountdown(true);
-      }
-
       toast({
         title: 'Sorteio realizado!',
         description: `${numVencedores} vencedor(es) sorteado(s) e removido(s) da lista temporária!`,
@@ -488,6 +482,12 @@ const Sorteio = () => {
                   setor={winner.setor}
                   cidade={winner.cidade}
                   delay={index * 200}
+                  onFlip={() => {
+                    if (!showCountdown && !currentWinnerId) {
+                      setCurrentWinnerId(winner.id);
+                      setShowCountdown(true);
+                    }
+                  }}
                 />
               ))}
             </div>

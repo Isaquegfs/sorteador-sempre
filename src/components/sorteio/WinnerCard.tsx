@@ -7,10 +7,18 @@ interface WinnerCardProps {
   setor: string;
   cidade: string;
   delay: number;
+  onFlip?: () => void;
 }
 
-export const WinnerCard = ({ nome, setor, cidade, delay }: WinnerCardProps) => {
+export const WinnerCard = ({ nome, setor, cidade, delay, onFlip }: WinnerCardProps) => {
   const [isRevealed, setIsRevealed] = useState(false);
+
+  const handleFlip = () => {
+    if (!isRevealed) {
+      setIsRevealed(true);
+      onFlip?.();
+    }
+  };
 
   return (
     <Card
@@ -25,7 +33,7 @@ export const WinnerCard = ({ nome, setor, cidade, delay }: WinnerCardProps) => {
         animationDelay: `${delay}ms`,
         animation: 'fadeIn 0.5s ease-out forwards'
       }}
-      onClick={() => !isRevealed && setIsRevealed(true)}
+      onClick={handleFlip}
     >
       <div className="p-8">
         {!isRevealed ? (
