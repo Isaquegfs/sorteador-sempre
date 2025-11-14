@@ -11,6 +11,8 @@ import { LogoAnimation } from '@/components/sorteio/LogoAnimation';
 import { WinnerCard } from '@/components/sorteio/WinnerCard';
 import { InfinityLoader } from '@/components/sorteio/InfinityLoader';
 import { CountdownTimer } from '@/components/sorteio/CountdownTimer';
+import { analyzeImageBrightness, analyzeBackground, getContrastClasses } from '@/lib/contrast';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,6 +90,10 @@ const Sorteio = () => {
       return true;
     }
   });
+  
+  // Estados para contraste adaptativo
+  const [contrastMode, setContrastMode] = useState<'light' | 'dark'>('dark');
+  const [contrastClasses, setContrastClasses] = useState(getContrastClasses('dark'));
   
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
   const persistExcluded = (set: Set<string>) => {
@@ -169,6 +175,19 @@ const Sorteio = () => {
       }
       if (data?.textura_url) {
         setTexturaUrl(data.textura_url);
+      }
+      
+      // Analisar contraste do background
+      if (data?.imagem_url) {
+        // Para imagens, analisar luminosidade da imagem
+        const brightness = await analyzeImageBrightness(data.imagem_url);
+        setContrastMode(brightness);
+        setContrastClasses(getContrastClasses(brightness));
+      } else if (data?.degrade_inicio) {
+        // Para gradientes, analisar cor inicial do degradê
+        const brightness = analyzeBackground(data.degrade_inicio);
+        setContrastMode(brightness);
+        setContrastClasses(getContrastClasses(brightness));
       }
     } catch (error) {
       // Silently handle error
@@ -771,7 +790,7 @@ const Sorteio = () => {
       <div 
         className="fixed inset-0 -z-10"
         style={{
-          background: 'rgba(0, 0, 0, 0.15)',
+          background: contrastClasses.overlay,
         }}
       />
 
@@ -906,70 +925,101 @@ const Sorteio = () => {
 
         {/* Próximo prêmio a ser sorteado */}
         {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && !emSequencia && (
-          <div className="text-center mb-8 p-5 bg-card/50 rounded-lg border-2 border-primary/20 animate-fade-in max-w-md mx-auto">
-            <p className="text-lg text-muted-foreground mb-2">Próximo prêmio a ser sorteado:</p>
-            <h3 className="text-2xl font-bold text-primary mb-2 break-words">{proximoPremio.nome}</h3>
-            {proximoPremio.descricao && (
-              <p className="text-sm text-muted-foreground break-words">{proximoPremio.descricao}</p>
-            )}
+          <div className="relative">
+            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
+            <div className={cn(
+              "text-center mb-8 p-6 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
+              contrastClasses.cardBg,
+              contrastClasses.cardBorder
+            )}>
+              <p className={cn("text-lg mb-2", contrastClasses.textMuted)}>
+                Próximo prêmio a ser sorteado:
+              </p>
+              <h3 className={cn("text-2xl font-bold mb-2 break-words", contrastClasses.numberColor)}>
+                {proximoPremio.nome}
+              </h3>
+              {proximoPremio.descricao && (
+                <p className={cn("text-sm break-words", contrastClasses.textSecondary)}>
+                  {proximoPremio.descricao}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
         {/* Indicador de progresso da sequência */}
         {emSequencia && (
-          <div className="text-center mb-8 p-5 bg-primary/10 rounded-lg border-2 border-primary/30 animate-fade-in max-w-md mx-auto">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="text-4xl font-bold text-primary">
-                {sequenciaAtual} / {sequenciaTotal}
+          <div className="relative">
+            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
+            <div className={cn(
+              "text-center mb-8 p-6 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
+              contrastClasses.cardBg,
+              contrastClasses.cardBorder
+            )}>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className={cn("text-4xl font-bold", contrastClasses.numberColor)}>
+                  {sequenciaAtual} / {sequenciaTotal}
+                </div>
               </div>
+              <p className={cn("text-lg font-semibold mb-1", contrastClasses.textPrimary)}>
+                Sorteio {sequenciaAtual} de {sequenciaTotal}
+              </p>
+              {proximoPremio && (
+                <>
+                  <p className={cn("text-sm mb-2", contrastClasses.textMuted)}>
+                    Prêmio atual:
+                  </p>
+                  <p className={cn("text-xl font-bold", contrastClasses.textSecondary)}>
+                    {proximoPremio.nome}
+                  </p>
+                </>
+              )}
             </div>
-            <p className="text-lg font-semibold text-foreground mb-1">
-              Sorteio {sequenciaAtual} de {sequenciaTotal}
-            </p>
-            {proximoPremio && (
-              <>
-                <p className="text-sm text-muted-foreground mb-2">Prêmio atual:</p>
-                <p className="text-xl font-bold text-primary">{proximoPremio.nome}</p>
-              </>
-            )}
           </div>
         )}
 
         {/* Controles de sequência - Aguardando próximo sorteio */}
         {aguardandoProximo && emSequencia && (
-          <div className="text-center mb-8 p-5 bg-card/50 rounded-lg border-2 border-primary/20 space-y-4 animate-fade-in max-w-md mx-auto">
-            <p className="text-lg font-semibold text-foreground">
-              Sorteio {sequenciaAtual} de {sequenciaTotal} concluído
-            </p>
-            <div className="flex justify-center gap-4">
-              {sequenciaAtual < sequenciaTotal ? (
-                <>
+          <div className="relative">
+            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
+            <div className={cn(
+              "text-center mb-8 p-6 rounded-lg border-2 space-y-4 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
+              contrastClasses.cardBg,
+              contrastClasses.cardBorder
+            )}>
+              <p className={cn("text-lg font-semibold", contrastClasses.textPrimary)}>
+                Sorteio {sequenciaAtual} de {sequenciaTotal} concluído
+              </p>
+              <div className="flex justify-center gap-4">
+                {sequenciaAtual < sequenciaTotal ? (
+                  <>
+                    <Button
+                      onClick={proximoSorteio}
+                      size="lg"
+                      className="gap-2"
+                    >
+                      <Sparkles className="h-5 w-5" />
+                      Próximo Sorteio ({sequenciaAtual + 1}/{sequenciaTotal})
+                    </Button>
+                    <Button
+                      onClick={cancelarSequencia}
+                      variant="destructive"
+                      size="lg"
+                    >
+                      Cancelar Sequência
+                    </Button>
+                  </>
+                ) : (
                   <Button
-                    onClick={proximoSorteio}
+                    onClick={finalizarSequencia}
                     size="lg"
                     className="gap-2"
                   >
                     <Sparkles className="h-5 w-5" />
-                    Próximo Sorteio ({sequenciaAtual + 1}/{sequenciaTotal})
+                    Ver Resumo Final
                   </Button>
-                  <Button
-                    onClick={cancelarSequencia}
-                    variant="destructive"
-                    size="lg"
-                  >
-                    Cancelar Sequência
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={finalizarSequencia}
-                  size="lg"
-                  className="gap-2"
-                >
-                  <Sparkles className="h-5 w-5" />
-                  Ver Resumo Final
-                </Button>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
