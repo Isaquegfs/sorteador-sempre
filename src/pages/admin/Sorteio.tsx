@@ -750,7 +750,7 @@ const Sorteio = () => {
       />
 
       {/* Contador de confirmação */}
-      {showCountdown && currentWinnerId && (
+      {showCountdown && currentWinnerId && sorteioComPremios && (
         <CountdownTimer
           duration={countdownDuration}
           onConfirm={handleConfirmWinner}
@@ -899,16 +899,6 @@ const Sorteio = () => {
               )}
             </div>
           </div>
-        )}
-
-        {/* Countdown Timer */}
-        {showCountdown && currentWinnerId && winners.length > 0 && sorteioComPremios && (
-          <CountdownTimer
-            duration={countdownDuration}
-            onConfirm={handleConfirmWinner}
-            onReject={handleRejectWinner}
-            winnerName={winners[0]?.nome || ''}
-          />
         )}
 
         {/* Loading state durante sorteio */}
