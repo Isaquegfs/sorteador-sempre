@@ -109,24 +109,26 @@ const BaseOficial = () => {
     const worksheet = workbook.Sheets[firstSheetName];
     const data = XLSX.utils.sheet_to_json(worksheet);
 
+    // Busca valores com case-insensitive
+    const getNormalizedValue = (row: any, key: string): string => {
+      const lowerKey = key.toLowerCase();
+      const foundKey = Object.keys(row).find(k => k.toLowerCase() === lowerKey);
+      if (!foundKey) return '';
+      
+      const value = row[foundKey];
+      if (value === null || value === undefined) return '';
+      return String(value).trim();
+    };
+
     // Filtra linhas vazias e mapeia os dados
     const validRows = data.filter((row: any) => {
-      // Busca o CPF em diferentes variações de nome de coluna
-      const cpfValue = row.cpf || row.CPF || row.Cpf || '';
-      const cpfStr = cpfValue?.toString().trim() || '';
+      const cpfStr = getNormalizedValue(row, 'cpf');
       return cpfStr.length > 0;
     });
 
     return await Promise.all(validRows.map(async (row: any) => {
-      // Busca valores com case-insensitive
-      const getNormalizedValue = (key: string) => {
-        const lowerKey = key.toLowerCase();
-        const foundKey = Object.keys(row).find(k => k.toLowerCase() === lowerKey);
-        return foundKey ? row[foundKey] : '';
-      };
-
       // Remove o apóstrofo que o Excel adiciona automaticamente para preservar zeros à esquerda
-      let cpf = getNormalizedValue('cpf')?.toString().trim() || '';
+      let cpf = getNormalizedValue(row, 'cpf');
       if (cpf.startsWith("'")) {
         cpf = cpf.substring(1);
       }
@@ -139,12 +141,12 @@ const BaseOficial = () => {
       }
 
       return {
-        nome: getNormalizedValue('nome')?.toString().trim() || '',
+        nome: getNormalizedValue(row, 'nome'),
         cpf_hash: await hashCPF(cpfNumeros),
         cpf_censurado: censorCPF(cpfNumeros),
-        cidade: getNormalizedValue('cidade')?.toString().trim() || '',
-        setor: getNormalizedValue('setor')?.toString().trim() || '',
-        email: getNormalizedValue('email')?.toString().trim() || '',
+        cidade: getNormalizedValue(row, 'cidade'),
+        setor: getNormalizedValue(row, 'setor'),
+        email: getNormalizedValue(row, 'email'),
       };
     }));
   };
