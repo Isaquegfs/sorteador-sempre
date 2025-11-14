@@ -16,6 +16,7 @@ import Usuarios from "./pages/admin/Usuarios";
 import Configuracoes from "./pages/admin/Configuracoes";
 import Sobre from "./pages/admin/Sobre";
 import Temas from "./pages/admin/Temas";
+import Premios from "./pages/admin/Premios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="participantes" element={<Participantes />} />
               <Route path="base-oficial" element={<BaseOficial />} />
+              <Route path="premios" element={<Premios />} />
               <Route path="sorteio" element={<Sorteio />} />
               <Route path="historico" element={<Historico />} />
               <Route path="usuarios" element={<Usuarios />} />
