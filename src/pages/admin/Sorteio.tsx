@@ -69,6 +69,7 @@ const Sorteio = () => {
   const [currentWinnerId, setCurrentWinnerId] = useState<string | null>(null);
   const [countdownDuration, setCountdownDuration] = useState(40);
   const [sorteioComPremios, setSorteioComPremios] = useState(false);
+  const [ativarContadorTempo, setAtivarContadorTempo] = useState(false);
   const [premiosDisponiveis, setPremiosDisponiveis] = useState<Premio[]>([]);
   const [proximoPremio, setProximoPremio] = useState<Premio | null>(null);
   
@@ -150,11 +151,14 @@ const Sorteio = () => {
     try {
       const { data } = await supabase
         .from('sistema_config')
-        .select('tempo_confirmacao_segundos')
+        .select('tempo_confirmacao_segundos, ativar_contador_tempo')
         .single();
 
       if (data?.tempo_confirmacao_segundos) {
         setCountdownDuration(data.tempo_confirmacao_segundos);
+      }
+      if (data?.ativar_contador_tempo !== undefined) {
+        setAtivarContadorTempo(data.ativar_contador_tempo);
       }
     } catch (error) {
       console.error('Erro ao carregar config:', error);
@@ -750,7 +754,7 @@ const Sorteio = () => {
       />
 
       {/* Contador de confirmação */}
-      {showCountdown && currentWinnerId && sorteioComPremios && (
+      {showCountdown && currentWinnerId && (sorteioComPremios || ativarContadorTempo) && (
         <CountdownTimer
           duration={countdownDuration}
           onConfirm={handleConfirmWinner}
