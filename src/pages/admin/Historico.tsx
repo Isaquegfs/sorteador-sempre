@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trophy, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Trophy, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -29,6 +30,8 @@ interface Sorteado {
   setor: string;
   cidade: string;
   sorteado_em: string;
+  confirmado: boolean | null;
+  confirmado_em: string | null;
 }
 
 const Historico = () => {
@@ -46,7 +49,7 @@ const Historico = () => {
     try {
       const { data, error } = await supabase
         .from('sorteados')
-        .select('*')
+        .select('id, nome, setor, cidade, sorteado_em, confirmado, confirmado_em')
         .order('sorteado_em', { ascending: false });
 
       if (error) throw error;
@@ -166,12 +169,13 @@ const Historico = () => {
                   <TableHead>Setor</TableHead>
                   <TableHead>Cidade</TableHead>
                   <TableHead>Data do Sorteio</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sorteados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       Nenhum sorteio realizado ainda
                     </TableCell>
                   </TableRow>
@@ -183,6 +187,24 @@ const Historico = () => {
                       <TableCell>{sorteado.cidade}</TableCell>
                       <TableCell>
                         {new Date(sorteado.sorteado_em).toLocaleString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        {sorteado.confirmado === null ? (
+                          <Badge variant="secondary" className="gap-1">
+                            <Clock className="h-3 w-3" />
+                            Pendente
+                          </Badge>
+                        ) : sorteado.confirmado ? (
+                          <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="h-3 w-3" />
+                            Confirmado
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="gap-1">
+                            <XCircle className="h-3 w-3" />
+                            Não confirmado
+                          </Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
