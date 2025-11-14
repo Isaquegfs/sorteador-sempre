@@ -385,9 +385,7 @@ const Sorteio = () => {
       // Adicionar à lista de vencedores da sequência
       setSequenciaVencedores(prev => [...prev, winnerComPremio]);
 
-      // Mostrar countdown para validação
-      setCurrentWinnerId(vencedor.id);
-      setShowCountdown(true);
+      // Countdown será iniciado pelo onFlip do WinnerCard após a revelação
 
       toast({
         title: `Sorteio ${sequenciaAtual} de ${sequenciaTotal}`,
@@ -521,11 +519,7 @@ const Sorteio = () => {
       setWinners(winnersComPremio);
       setShowWinners(true);
 
-      // Mostrar countdown APENAS no modo com prêmios
-      if (sorteioComPremios && numVencedores === 1 && vencedores.length > 0) {
-        setCurrentWinnerId(vencedores[0].id);
-        setShowCountdown(true);
-      }
+      // Countdown será iniciado pelo onFlip do WinnerCard após a revelação
 
       toast({
         title: 'Sorteio realizado!',
