@@ -50,47 +50,42 @@ export const CountdownTimer = ({ duration, onConfirm, onReject, winnerName }: Co
     return 'text-primary';
   };
 
-  if (isExpired) {
-    return (
-      <div className="fixed top-4 left-4 z-50 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 animate-fade-in">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Tempo esgotado</span>
+  return (
+    <div className="fixed top-4 left-4 z-50 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 animate-fade-in">
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Clock className={cn("h-5 w-5 animate-pulse", getColorClass())} />
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">
+              {isExpired ? 'Tempo esgotado' : 'Tempo restante'}
+            </div>
+            <div className={cn("text-2xl font-bold tabular-nums", getColorClass())}>
+              {formatTime(timeLeft)}
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={onConfirm}
-              className="gap-2 bg-green-600 hover:bg-green-700"
-              size="sm"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Confirmado
-            </Button>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button
+            onClick={onConfirm}
+            className="gap-2 bg-green-600 hover:bg-green-700"
+            size="sm"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Confirmado
+          </Button>
+          
+          {isExpired && (
             <Button
               onClick={onReject}
               variant="destructive"
-              className="gap-2"
+              className="gap-2 animate-fade-in"
               size="sm"
             >
               <XCircle className="h-4 w-4" />
               Não confirmado
             </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed top-4 left-4 z-50 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Clock className={cn("h-5 w-5 animate-pulse", getColorClass())} />
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Tempo restante</div>
-          <div className={cn("text-2xl font-bold tabular-nums", getColorClass())}>
-            {formatTime(timeLeft)}
-          </div>
+          )}
         </div>
       </div>
     </div>
