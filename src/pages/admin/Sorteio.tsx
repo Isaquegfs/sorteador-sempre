@@ -905,18 +905,18 @@ const Sorteio = () => {
 
         {/* Próximo prêmio a ser sorteado */}
         {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && !emSequencia && (
-          <div className="text-center mb-8 p-6 bg-card/50 rounded-lg border-2 border-primary/20 animate-fade-in">
+          <div className="text-center mb-8 p-5 bg-card/50 rounded-lg border-2 border-primary/20 animate-fade-in max-w-md mx-auto">
             <p className="text-lg text-muted-foreground mb-2">Próximo prêmio a ser sorteado:</p>
-            <h3 className="text-3xl font-bold text-primary mb-2">{proximoPremio.nome}</h3>
+            <h3 className="text-2xl font-bold text-primary mb-2 break-words">{proximoPremio.nome}</h3>
             {proximoPremio.descricao && (
-              <p className="text-muted-foreground">{proximoPremio.descricao}</p>
+              <p className="text-sm text-muted-foreground break-words">{proximoPremio.descricao}</p>
             )}
           </div>
         )}
 
         {/* Indicador de progresso da sequência */}
         {emSequencia && (
-          <div className="text-center mb-8 p-6 bg-primary/10 rounded-lg border-2 border-primary/30 animate-fade-in">
+          <div className="text-center mb-8 p-5 bg-primary/10 rounded-lg border-2 border-primary/30 animate-fade-in max-w-md mx-auto">
             <div className="flex items-center justify-center gap-3 mb-3">
               <div className="text-4xl font-bold text-primary">
                 {sequenciaAtual} / {sequenciaTotal}
@@ -936,7 +936,7 @@ const Sorteio = () => {
 
         {/* Controles de sequência - Aguardando próximo sorteio */}
         {aguardandoProximo && emSequencia && (
-          <div className="text-center mb-8 p-6 bg-card/50 rounded-lg border-2 border-primary/20 space-y-4 animate-fade-in">
+          <div className="text-center mb-8 p-5 bg-card/50 rounded-lg border-2 border-primary/20 space-y-4 animate-fade-in max-w-md mx-auto">
             <p className="text-lg font-semibold text-foreground">
               Sorteio {sequenciaAtual} de {sequenciaTotal} concluído
             </p>
