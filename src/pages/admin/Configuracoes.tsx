@@ -33,6 +33,7 @@ const Configuracoes = () => {
   const [fechamentoAutomaticoAtivo, setFechamentoAutomaticoAtivo] = useState(false);
   const [tempoConfirmacao, setTempoConfirmacao] = useState(40);
   const [sorteioComPremios, setSorteioComPremios] = useState(false);
+  const [ativarContadorTempo, setAtivarContadorTempo] = useState(false);
   const [sistemaConfigId, setSistemaConfigId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -72,7 +73,7 @@ const Configuracoes = () => {
       // Carregar tempo de confirmação e sorteio com prêmios
       const { data: configData } = await supabase
         .from('sistema_config')
-        .select('id, tempo_confirmacao_segundos, sorteio_com_premios')
+        .select('id, tempo_confirmacao_segundos, sorteio_com_premios, ativar_contador_tempo')
         .single();
 
       if (configData) {
@@ -81,6 +82,7 @@ const Configuracoes = () => {
           setTempoConfirmacao(configData.tempo_confirmacao_segundos);
         }
         setSorteioComPremios(configData.sorteio_com_premios || false);
+        setAtivarContadorTempo(configData.ativar_contador_tempo || false);
       }
     } catch (error) {
       toast({
@@ -162,7 +164,8 @@ const Configuracoes = () => {
           .from('sistema_config')
           .update({ 
             tempo_confirmacao_segundos: tempoConfirmacao,
-            sorteio_com_premios: sorteioComPremios
+            sorteio_com_premios: sorteioComPremios,
+            ativar_contador_tempo: ativarContadorTempo
           })
           .eq('id', sistemaConfigId);
 
@@ -411,7 +414,7 @@ const Configuracoes = () => {
               onChange={(e) => setTempoConfirmacao(Number(e.target.value))}
             />
             <p className="text-sm text-muted-foreground">
-              Tempo usado apenas no modo com prêmios
+              Tempo usado quando o contador está ativo
             </p>
           </div>
 
@@ -426,6 +429,20 @@ const Configuracoes = () => {
               id="sorteioComPremios"
               checked={sorteioComPremios}
               onCheckedChange={setSorteioComPremios}
+            />
+          </div>
+
+          <div className="flex items-center justify-between space-x-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="ativarContadorTempo">Ativar contador de tempo</Label>
+              <p className="text-sm text-muted-foreground">
+                Exibe o timer de confirmação mesmo em sorteios sem prêmios (opcional)
+              </p>
+            </div>
+            <Switch
+              id="ativarContadorTempo"
+              checked={ativarContadorTempo}
+              onCheckedChange={setAtivarContadorTempo}
             />
           </div>
         </CardContent>

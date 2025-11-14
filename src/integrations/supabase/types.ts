@@ -166,6 +166,7 @@ export type Database = {
       }
       sistema_config: {
         Row: {
+          ativar_contador_tempo: boolean | null
           id: string
           senha_criptografia_hash: string | null
           sorteio_com_premios: boolean | null
@@ -173,6 +174,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativar_contador_tempo?: boolean | null
           id?: string
           senha_criptografia_hash?: string | null
           sorteio_com_premios?: boolean | null
@@ -180,6 +182,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativar_contador_tempo?: boolean | null
           id?: string
           senha_criptografia_hash?: string | null
           sorteio_com_premios?: boolean | null
