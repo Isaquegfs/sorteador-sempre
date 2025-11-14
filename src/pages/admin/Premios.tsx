@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Gift, Plus, Pencil, Trash2, GripVertical, ChevronUp, ChevronDown, Upload, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DndContext,
   closestCenter,
@@ -93,8 +94,19 @@ interface ImportPreviewItem {
   erro?: string;
 }
 
+interface Sorteado {
+  id: string;
+  nome: string;
+  cidade: string;
+  setor: string;
+  sorteado_em: string;
+  premio_id: string | null;
+  confirmado: boolean | null;
+}
+
 export default function Premios() {
   const [premios, setPremios] = useState<Premio[]>([]);
+  const [sorteados, setSorteados] = useState<Sorteado[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -108,6 +120,7 @@ export default function Premios() {
   const [importPreview, setImportPreview] = useState<ImportPreviewItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [temCabecalho, setTemCabecalho] = useState(true);
+  const [activeTab, setActiveTab] = useState('premios');
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -119,6 +132,7 @@ export default function Premios() {
 
   useEffect(() => {
     loadPremios();
+    loadSorteados();
   }, []);
 
   const loadPremios = async () => {
@@ -127,6 +141,7 @@ export default function Premios() {
       const { data, error } = await supabase
         .from('premios')
         .select('*')
+        .in('status', ['Disponível', 'Reprogramado'])
         .order('ordem', { ascending: true });
 
       if (error) throw error;
@@ -139,6 +154,24 @@ export default function Premios() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadSorteados = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sorteados')
+        .select('id, nome, cidade, setor, sorteado_em, premio_id, confirmado')
+        .order('sorteado_em', { ascending: false });
+
+      if (error) throw error;
+      setSorteados((data || []) as Sorteado[]);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar sorteados',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -796,58 +829,131 @@ export default function Premios() {
         </Card>
       )}
 
-      {/* Tabela */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" />
-            Lista de Prêmios
-          </CardTitle>
-          <CardDescription>
-            Arraste as linhas para reordenar ou use os botões de seta
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Carregando...
-            </div>
-          ) : premios.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum prêmio cadastrado ainda
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead className="w-20">Ordem</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="w-32">Status</TableHead>
-                    <TableHead className="text-right w-48">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <SortableContext
-                    items={premios.map(p => p.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {premios.map((premio, index) => (
-                      <SortableRow key={premio.id} premio={premio} index={index} />
+      {/* Tabela com Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="premios">
+            Prêmios ({premios.length})
+          </TabsTrigger>
+          <TabsTrigger value="sorteados">
+            Sorteados ({sorteados.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="premios">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Lista de Prêmios
+              </CardTitle>
+              <CardDescription>
+                Arraste as linhas para reordenar ou use os botões de seta
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando...
+                </div>
+              ) : premios.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum prêmio cadastrado ainda
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-20">Ordem</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead className="w-32">Status</TableHead>
+                        <TableHead className="text-right w-48">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <SortableContext
+                        items={premios.map(p => p.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {premios.map((premio, index) => (
+                          <SortableRow key={premio.id} premio={premio} index={index} />
+                        ))}
+                      </SortableContext>
+                    </TableBody>
+                  </Table>
+                </DndContext>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sorteados">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Prêmios Sorteados
+              </CardTitle>
+              <CardDescription>
+                Lista de todos os prêmios já sorteados
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando...
+                </div>
+              ) : sorteados.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum prêmio sorteado ainda
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Cidade</TableHead>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Data do Sorteio</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sorteados.map((sorteado) => (
+                      <TableRow key={sorteado.id}>
+                        <TableCell className="font-medium">{sorteado.nome}</TableCell>
+                        <TableCell>{sorteado.cidade}</TableCell>
+                        <TableCell>{sorteado.setor}</TableCell>
+                        <TableCell>
+                          {new Date(sorteado.sorteado_em).toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={sorteado.confirmado ? 'default' : 'secondary'}>
+                            {sorteado.confirmado ? 'Confirmado' : 'Pendente'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </SortableContext>
-                </TableBody>
-              </Table>
-            </DndContext>
-          )}
-        </CardContent>
-      </Card>
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog de Importação */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
