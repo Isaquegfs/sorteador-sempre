@@ -4,7 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Trophy, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Trophy, Trash2, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -32,10 +33,13 @@ interface Sorteado {
   sorteado_em: string;
   confirmado: boolean | null;
   confirmado_em: string | null;
+  premio_nome: string | null;
 }
 
 const Historico = () => {
   const [sorteados, setSorteados] = useState<Sorteado[]>([]);
+  const [filteredSorteados, setFilteredSorteados] = useState<Sorteado[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -49,12 +53,28 @@ const Historico = () => {
     try {
       const { data, error } = await supabase
         .from('sorteados')
-        .select('id, nome, setor, cidade, sorteado_em, confirmado, confirmado_em')
+        .select(`
+          id, 
+          nome, 
+          setor, 
+          cidade, 
+          sorteado_em, 
+          confirmado, 
+          confirmado_em,
+          premios:premio_id (nome)
+        `)
         .order('sorteado_em', { ascending: false });
 
       if (error) throw error;
 
-      setSorteados(data || []);
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        premio_nome: item.premios?.nome || null,
+        premios: undefined
+      }));
+
+      setSorteados(mappedData);
+      setFilteredSorteados(mappedData);
     } catch (error) {
       toast({
         title: 'Erro ao carregar histórico',
@@ -64,6 +84,21 @@ const Historico = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredSorteados(sorteados);
+      return;
+    }
+
+    const lowercaseSearch = searchTerm.toLowerCase();
+    const filtered = sorteados.filter(
+      (sorteado) =>
+        sorteado.nome.toLowerCase().includes(lowercaseSearch) ||
+        sorteado.premio_nome?.toLowerCase().includes(lowercaseSearch)
+    );
+    setFilteredSorteados(filtered);
+  }, [searchTerm, sorteados]);
 
   const handleDeleteHistorico = async () => {
     setIsDeleting(true);
@@ -158,7 +193,17 @@ const Historico = () => {
             {sorteados.length} vencedor(es) no total
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome do participante ou prêmio..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
           <div className="border rounded-lg">
             <Table>
               <TableHeader>
@@ -166,23 +211,31 @@ const Historico = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Cidade</TableHead>
+                  <TableHead>Prêmio</TableHead>
                   <TableHead>Data do Sorteio</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sorteados.length === 0 ? (
+                {filteredSorteados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      Nenhum sorteio realizado ainda
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum sorteio realizado ainda'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sorteados.map((sorteado) => (
+                  filteredSorteados.map((sorteado) => (
                     <TableRow key={sorteado.id}>
                       <TableCell className="font-medium">{sorteado.nome}</TableCell>
                       <TableCell>{sorteado.setor}</TableCell>
                       <TableCell>{sorteado.cidade}</TableCell>
+                      <TableCell>
+                        {sorteado.premio_nome ? (
+                          <span className="text-sm">{sorteado.premio_nome}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground italic">Sem prêmio</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {new Date(sorteado.sorteado_em).toLocaleString('pt-BR')}
                       </TableCell>
