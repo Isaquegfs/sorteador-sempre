@@ -98,6 +98,17 @@ const Sorteio = () => {
   };
   const { toast } = useToast();
 
+  // Helper function para obter os próximos 4 prêmios
+  const getProximos4Premios = (): Premio[] => {
+    if (!proximoPremio || premiosDisponiveis.length === 0) return [];
+    
+    const indexAtual = premiosDisponiveis.findIndex(p => p.id === proximoPremio.id);
+    if (indexAtual === -1) return [];
+    
+    // Retornar os próximos 4 (ou menos se não houver)
+    return premiosDisponiveis.slice(indexAtual + 1, indexAtual + 5);
+  };
+
   useEffect(() => {
     const stored = readExcluded();
     setExcludedIds(stored);
@@ -746,6 +757,32 @@ const Sorteio = () => {
           background: 'rgba(0, 0, 0, 0.15)',
         }}
       />
+
+      {/* Lista de próximos prêmios - lado esquerdo */}
+      {sorteioComPremios && proximoPremio && getProximos4Premios().length > 0 && !showWinners && !isAnimating && (
+        <div className="fixed left-4 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
+          <div className="bg-card/70 backdrop-blur-sm border border-primary/20 rounded-lg p-4 shadow-lg max-w-[250px]">
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+              Próximos Prêmios
+            </h4>
+            <div className="space-y-2">
+              {getProximos4Premios().map((premio, index) => (
+                <div 
+                  key={premio.id}
+                  className="flex items-start gap-2 text-sm"
+                >
+                  <span className="text-primary font-bold shrink-0">
+                    {index + 1}º
+                  </span>
+                  <span className="text-foreground/80 line-clamp-2">
+                    {premio.nome}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contador de confirmação */}
       {showCountdown && currentWinnerId && (sorteioComPremios || ativarContadorTempo) && (
