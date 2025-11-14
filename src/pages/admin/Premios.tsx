@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Gift, Plus, Pencil, Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Gift, Plus, Pencil, Trash2, GripVertical, ChevronUp, ChevronDown, Upload, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import {
   DndContext,
   closestCenter,
@@ -54,6 +55,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +85,13 @@ interface FormData {
   status: PremioStatus;
 }
 
+interface ImportPreviewItem {
+  nome: string;
+  descricao: string;
+  valido: boolean;
+  erro?: string;
+}
+
 export default function Premios() {
   const [premios, setPremios] = useState<Premio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +102,10 @@ export default function Premios() {
     descricao: '',
     status: 'Disponível',
   });
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportPreviewItem[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -392,6 +412,160 @@ export default function Premios() {
     setShowForm(false);
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Por favor, selecione um arquivo XLSX ou XLS',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setImportFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+        // Pular primeira linha se for cabeçalho
+        const startRow = jsonData[0] && (
+          jsonData[0][0]?.toString().toLowerCase().includes('nome') ||
+          jsonData[0][0]?.toString().toLowerCase().includes('prêmio')
+        ) ? 1 : 0;
+
+        const preview: ImportPreviewItem[] = [];
+
+        for (let i = startRow; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+
+          const nome = row[0]?.toString().trim() || '';
+          const descricao = row[1]?.toString().trim() || '';
+
+          if (!nome) {
+            preview.push({
+              nome: '(vazio)',
+              descricao: descricao,
+              valido: false,
+              erro: 'Nome obrigatório',
+            });
+            continue;
+          }
+
+          if (nome.length < 3) {
+            preview.push({
+              nome: nome,
+              descricao: descricao,
+              valido: false,
+              erro: 'Nome deve ter pelo menos 3 caracteres',
+            });
+            continue;
+          }
+
+          if (nome.length > 200) {
+            preview.push({
+              nome: nome,
+              descricao: descricao,
+              valido: false,
+              erro: 'Nome muito longo (máx 200 caracteres)',
+            });
+            continue;
+          }
+
+          preview.push({
+            nome: nome,
+            descricao: descricao,
+            valido: true,
+          });
+        }
+
+        setImportPreview(preview);
+
+        if (preview.length === 0) {
+          toast({
+            title: 'Arquivo vazio',
+            description: 'Não foram encontrados dados válidos no arquivo',
+            variant: 'destructive',
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao processar arquivo',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    };
+
+    reader.readAsBinaryString(file);
+  };
+
+  const handleImportConfirm = async () => {
+    const validItems = importPreview.filter(item => item.valido);
+
+    if (validItems.length === 0) {
+      toast({
+        title: 'Nenhum item válido',
+        description: 'Não há prêmios válidos para importar',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const nextOrdem = await getNextOrdem();
+
+      for (let i = 0; i < validItems.length; i++) {
+        const item = validItems[i];
+        const { error } = await supabase.from('premios').insert({
+          nome: item.nome,
+          descricao: item.descricao || null,
+          status: 'Disponível',
+          ordem: nextOrdem + i,
+        });
+
+        if (error) throw error;
+      }
+
+      const invalidCount = importPreview.length - validItems.length;
+
+      toast({
+        title: 'Importação concluída',
+        description: `${validItems.length} prêmio(s) importado(s) com sucesso${invalidCount > 0 ? `. ${invalidCount} item(ns) ignorado(s) por erros.` : ''}`,
+      });
+
+      setShowImportDialog(false);
+      setImportFile(null);
+      setImportPreview([]);
+      loadPremios();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao importar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleImportCancel = () => {
+    setShowImportDialog(false);
+    setImportFile(null);
+    setImportPreview([]);
+  };
+
   const getStatusVariant = (
     status: PremioStatus
   ): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -526,10 +700,19 @@ export default function Premios() {
             Total de {premios.length} prêmio(s) cadastrado(s)
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} disabled={showForm}>
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Prêmio
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowImportDialog(true)}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importar XLSX
+          </Button>
+          <Button onClick={() => setShowForm(true)} disabled={showForm}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Prêmio
+          </Button>
+        </div>
       </div>
 
       {/* Formulário */}
@@ -664,6 +847,99 @@ export default function Premios() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de Importação */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Importar Prêmios via XLSX
+            </DialogTitle>
+            <DialogDescription>
+              Selecione um arquivo XLSX com os prêmios. Formato: Coluna A = Nome (obrigatório), Coluna B = Descrição (opcional)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="file-upload">Arquivo XLSX</Label>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileUpload}
+                className="cursor-pointer"
+              />
+            </div>
+
+            {/* Preview */}
+            {importPreview.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Preview ({importPreview.length} item(ns))</Label>
+                  <div className="text-sm text-muted-foreground">
+                    {importPreview.filter(i => i.valido).length} válido(s) • {' '}
+                    {importPreview.filter(i => !i.valido).length} com erro(s)
+                  </div>
+                </div>
+
+                <div className="border rounded-md max-h-[300px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Status</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Erro</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importPreview.map((item, index) => (
+                        <TableRow key={index} className={!item.valido ? 'bg-destructive/10' : ''}>
+                          <TableCell>
+                            {item.valido ? (
+                              <Badge variant="default" className="text-xs">OK</Badge>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs">Erro</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{item.nome}</TableCell>
+                          <TableCell>
+                            {item.descricao
+                              ? item.descricao.substring(0, 40) + (item.descricao.length > 40 ? '...' : '')
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-destructive text-sm">
+                            {item.erro || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleImportCancel}
+              disabled={isImporting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleImportConfirm}
+              disabled={importPreview.length === 0 || importPreview.filter(i => i.valido).length === 0 || isImporting}
+            >
+              {isImporting ? 'Importando...' : `Importar ${importPreview.filter(i => i.valido).length} Prêmio(s)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
