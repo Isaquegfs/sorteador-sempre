@@ -101,7 +101,6 @@ const Usuarios = () => {
 
       setUsuarios(usuariosComRoles || []);
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
       toast({
         title: 'Erro ao carregar usuários',
         variant: 'destructive',
@@ -157,7 +156,6 @@ const Usuarios = () => {
       // Recarregar usuários para garantir dados atualizados
       await loadUsuarios();
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error);
       toast({
         title: 'Erro ao criar usuário',
         description: error.message || 'Tente novamente mais tarde.',
@@ -206,7 +204,6 @@ const Usuarios = () => {
       setNewPassword('');
       setSelectedUserId(null);
     } catch (error: any) {
-      console.error('Erro ao alterar senha:', error);
       toast({
         title: 'Erro ao alterar senha',
         description: error.message || 'Tente novamente mais tarde.',
@@ -226,7 +223,6 @@ const Usuarios = () => {
         variant: 'destructive',
       });
     } catch (error: any) {
-      console.error('Erro ao deletar usuário:', error);
       toast({
         title: 'Erro ao deletar usuário',
         description: error.message || 'Tente novamente mais tarde.',

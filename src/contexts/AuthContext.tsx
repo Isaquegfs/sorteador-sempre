@@ -86,16 +86,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Erro ao buscar roles:', error);
         throw error;
       }
 
-      console.log('Roles encontradas:', data);
       const roles = data?.map(r => r.role) || [];
       setIsAdmin(roles.includes('admin'));
       setIsModerator(roles.includes('moderator'));
     } catch (error) {
-      console.error('Erro ao verificar roles:', error);
+      // Silently handle error
       setIsAdmin(false);
       setIsModerator(false);
     } finally {

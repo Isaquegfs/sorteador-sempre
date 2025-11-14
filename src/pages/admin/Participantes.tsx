@@ -52,7 +52,6 @@ const Participantes = () => {
       if (error) throw error;
       setParticipantes(data || []);
     } catch (error) {
-      console.error('Erro ao carregar participantes:', error);
       toast({
         title: 'Erro ao carregar participantes',
         variant: 'destructive',
@@ -77,7 +76,6 @@ const Participantes = () => {
       
       loadParticipantes();
     } catch (error) {
-      console.error('Erro ao deletar participante:', error);
       toast({
         title: 'Erro ao remover participante',
         variant: 'destructive',

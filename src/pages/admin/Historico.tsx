@@ -56,7 +56,6 @@ const Historico = () => {
 
       setSorteados(data || []);
     } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
       toast({
         title: 'Erro ao carregar histórico',
         variant: 'destructive',
@@ -83,7 +82,6 @@ const Historico = () => {
 
       setSorteados([]);
     } catch (error) {
-      console.error('Erro ao apagar histórico:', error);
       toast({
         title: 'Erro ao apagar histórico',
         description: 'Tente novamente mais tarde.',

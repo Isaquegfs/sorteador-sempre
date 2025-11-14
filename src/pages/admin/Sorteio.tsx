@@ -112,7 +112,7 @@ const Sorteio = () => {
         setTexturaUrl(data.textura_url);
       }
     } catch (error) {
-      console.error('Erro ao carregar tema ativo:', error);
+      // Silently handle error
     }
   };
 
@@ -127,7 +127,7 @@ const Sorteio = () => {
         setCountdownDuration(data.tempo_confirmacao_segundos);
       }
     } catch (error) {
-      console.error('Erro ao carregar configuração de tempo:', error);
+      // Silently handle error
     }
   };
 
@@ -144,7 +144,6 @@ const Sorteio = () => {
       const filterSet = ids ?? excludedIds;
       setParticipantes((allParticipantes || []).filter(p => !filterSet.has(p.id)));
     } catch (error) {
-      console.error('Erro ao carregar participantes:', error);
       toast({
         title: 'Erro ao carregar participantes',
         variant: 'destructive',
@@ -237,7 +236,6 @@ const Sorteio = () => {
         description: `${numVencedores} vencedor(es) sorteado(s) e removido(s) da lista temporária!`,
       });
     } catch (error) {
-      console.error('Erro ao realizar sorteio:', error);
       toast({
         title: 'Erro ao realizar sorteio',
         description: 'Tente novamente mais tarde.',
@@ -291,7 +289,6 @@ const Sorteio = () => {
       setShowCountdown(false);
       setCurrentWinnerId(null);
     } catch (error) {
-      console.error('Erro ao confirmar sorteado:', error);
       toast({
         title: 'Erro ao confirmar',
         description: 'Não foi possível registrar a confirmação.',
@@ -335,7 +332,6 @@ const Sorteio = () => {
       setShowCountdown(false);
       setCurrentWinnerId(null);
     } catch (error) {
-      console.error('Erro ao rejeitar sorteado:', error);
       toast({
         title: 'Erro ao registrar',
         description: 'Não foi possível registrar a ausência.',
@@ -362,7 +358,6 @@ const Sorteio = () => {
         description: 'Pronto para novo sorteio. O histórico foi mantido.',
       });
     } catch (error) {
-      console.error('Erro ao reiniciar sorteio:', error);
       toast({
         title: 'Erro ao reiniciar sorteio',
         description: 'Tente novamente mais tarde.',

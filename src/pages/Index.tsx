@@ -67,7 +67,6 @@ const Index = () => {
         .rpc('is_cpf_elegivel', { cpf_hash_input: cpfHash });
 
       if (elegError) {
-        console.error('Erro ao verificar elegibilidade:', elegError);
         toast({
           title: "Erro ao verificar elegibilidade",
           description: "Não foi possível verificar o CPF no sistema. Por favor, tente novamente.",
@@ -92,7 +91,7 @@ const Index = () => {
         .rpc('is_cpf_elegivel', { cpf_hash_input: cpfHash });
 
       if (participanteError) {
-        console.error('Erro ao verificar participante existente:', participanteError);
+        // Silently handle error
       }
 
       // Verificar duplicata apenas se elegível
@@ -108,7 +107,7 @@ const Index = () => {
           isJaCadastrado = true;
         }
       } catch (error) {
-        console.log('Usuário ainda não cadastrado');
+        // User not yet registered
       }
 
       if (isJaCadastrado) {
@@ -146,8 +145,6 @@ const Index = () => {
         cpf: "",
       });
     } catch (error: any) {
-      console.error('Erro ao cadastrar:', error);
-      
       let errorMessage = "Ocorreu um erro inesperado. Por favor, tente novamente.";
       
       // Tratar erros específicos do Supabase
