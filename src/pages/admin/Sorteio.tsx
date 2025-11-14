@@ -71,6 +71,14 @@ const Sorteio = () => {
   const [sorteioComPremios, setSorteioComPremios] = useState(false);
   const [premiosDisponiveis, setPremiosDisponiveis] = useState<Premio[]>([]);
   const [proximoPremio, setProximoPremio] = useState<Premio | null>(null);
+  
+  // Estados para sequência de sorteios
+  const [emSequencia, setEmSequencia] = useState(false);
+  const [sequenciaTotal, setSequenciaTotal] = useState(0);
+  const [sequenciaAtual, setSequenciaAtual] = useState(0);
+  const [sequenciaVencedores, setSequenciaVencedores] = useState<Winner[]>([]);
+  const [aguardandoProximo, setAguardandoProximo] = useState(false);
+  
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
   const persistExcluded = (set: Set<string>) => {
     try {
@@ -256,6 +264,192 @@ const Sorteio = () => {
       return;
     }
 
+    // Verificar se é modo com prêmios e múltiplos vencedores
+    if (sorteioComPremios && numVencedores > 1) {
+      // Iniciar sequência de sorteios
+      iniciarSequenciaSorteios();
+      return;
+    }
+
+    // Modo tradicional OU modo prêmios com 1 vencedor
+    realizarSorteioUnico();
+  };
+
+  const iniciarSequenciaSorteios = () => {
+    // Verificar se há prêmios suficientes
+    if (premiosDisponiveis.length < numVencedores) {
+      toast({
+        title: 'Prêmios insuficientes',
+        description: `Há apenas ${premiosDisponiveis.length} prêmio(s) disponível(is) para ${numVencedores} sorteio(s).`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setEmSequencia(true);
+    setSequenciaTotal(numVencedores);
+    setSequenciaAtual(1);
+    setSequenciaVencedores([]);
+    setAguardandoProximo(false);
+
+    toast({
+      title: 'Sequência iniciada',
+      description: `${numVencedores} sorteios serão realizados sequencialmente`,
+    });
+
+    // Realizar primeiro sorteio da sequência
+    realizarSorteioSequencial();
+  };
+
+  const realizarSorteioSequencial = async () => {
+    if (participantes.length === 0) {
+      toast({
+        title: 'Sem participantes',
+        description: 'Não há mais participantes disponíveis para sortear.',
+        variant: 'destructive',
+      });
+      finalizarSequencia();
+      return;
+    }
+
+    if (!proximoPremio) {
+      toast({
+        title: 'Sem prêmios',
+        description: 'Não há mais prêmios disponíveis.',
+        variant: 'destructive',
+      });
+      finalizarSequencia();
+      return;
+    }
+
+    setShowWinners(false);
+    setWinners([]);
+    setIsSorteando(true);
+    setIsAnimating(true);
+    setAguardandoProximo(false);
+
+    try {
+      // Animação de sorteio
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Obter usuário
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Sortear UMA pessoa
+      const vencedores = selectRandomItems(participantes, 1);
+      const vencedor = vencedores[0];
+
+      // Preparar dados com prêmio
+      const sorteadoData = {
+        participante_id: vencedor.id,
+        nome: vencedor.nome,
+        setor: vencedor.setor,
+        cidade: vencedor.cidade,
+        sorteado_por: user?.id,
+        premio_id: proximoPremio.id,
+        confirmado: null, // Aguardando validação
+      };
+
+      // Inserir no banco
+      const { error } = await supabase
+        .from('sorteados')
+        .insert([sorteadoData]);
+
+      if (error) throw error;
+
+      // Atualizar listas
+      const novosExcluidos = new Set(excludedIds);
+      novosExcluidos.add(vencedor.id);
+      setExcludedIds(novosExcluidos);
+      persistExcluded(novosExcluidos);
+      setParticipantes(prev => prev.filter(p => p.id !== vencedor.id));
+
+      // Preparar winner com prêmio
+      const winnerComPremio: Winner = {
+        ...vencedor,
+        premio: {
+          id: proximoPremio.id,
+          nome: proximoPremio.nome,
+          descricao: proximoPremio.descricao,
+        },
+      };
+
+      setWinners([winnerComPremio]);
+      setShowWinners(true);
+      setIsAnimating(false);
+
+      // Adicionar à lista de vencedores da sequência
+      setSequenciaVencedores(prev => [...prev, winnerComPremio]);
+
+      // Mostrar countdown para validação
+      setCurrentWinnerId(vencedor.id);
+      setShowCountdown(true);
+
+      toast({
+        title: `Sorteio ${sequenciaAtual} de ${sequenciaTotal}`,
+        description: `${vencedor.nome} foi sorteado!`,
+      });
+    } catch (error) {
+      console.error('Erro ao sortear:', error);
+      toast({
+        title: 'Erro ao sortear',
+        variant: 'destructive',
+      });
+      setIsAnimating(false);
+      finalizarSequencia();
+    } finally {
+      setIsSorteando(false);
+    }
+  };
+
+  const proximoSorteio = async () => {
+    if (sequenciaAtual >= sequenciaTotal) {
+      finalizarSequencia();
+      return;
+    }
+
+    setSequenciaAtual(prev => prev + 1);
+    
+    // Recarregar prêmios disponíveis antes do próximo sorteio
+    await loadPremiosDisponiveis();
+    
+    // Realizar próximo sorteio
+    realizarSorteioSequencial();
+  };
+
+  const cancelarSequencia = () => {
+    setEmSequencia(false);
+    setAguardandoProximo(false);
+    setShowCountdown(false);
+    setCurrentWinnerId(null);
+    
+    toast({
+      title: 'Sequência cancelada',
+      description: `${sequenciaVencedores.length} de ${sequenciaTotal} sorteios foram concluídos`,
+    });
+
+    // Mostrar resumo dos sorteios realizados
+    finalizarSequencia();
+  };
+
+  const finalizarSequencia = () => {
+    setEmSequencia(false);
+    setAguardandoProximo(false);
+    setShowCountdown(false);
+    setCurrentWinnerId(null);
+    
+    if (sequenciaVencedores.length > 0) {
+      setWinners(sequenciaVencedores);
+      setShowWinners(true);
+      
+      toast({
+        title: 'Sequência finalizada!',
+        description: `${sequenciaVencedores.length} sorteio(s) realizado(s) com sucesso`,
+      });
+    }
+  };
+
+  const realizarSorteioUnico = async () => {
     // Resetar estados
     setShowWinners(false);
     setWinners([]);
@@ -273,13 +467,27 @@ const Sorteio = () => {
       const vencedores = selectRandomItems(participantes, numVencedores);
 
       // Preparar dados para inserção no histórico
-      const sorteadosData = vencedores.map(vencedor => ({
-        participante_id: vencedor.id,
-        nome: vencedor.nome,
-        setor: vencedor.setor,
-        cidade: vencedor.cidade,
-        sorteado_por: user?.id,
-      }));
+      const sorteadosData = vencedores.map(vencedor => {
+        const baseData: any = {
+          participante_id: vencedor.id,
+          nome: vencedor.nome,
+          setor: vencedor.setor,
+          cidade: vencedor.cidade,
+          sorteado_por: user?.id,
+        };
+
+        // No modo com prêmios (1 vencedor), adicionar o prêmio e marcar como não confirmado
+        if (sorteioComPremios && proximoPremio) {
+          baseData.premio_id = proximoPremio.id;
+          baseData.confirmado = null; // Aguardando validação
+        } else {
+          // Modo tradicional: sem prêmio, sem validação
+          baseData.confirmado = true; // Confirmado automaticamente
+          baseData.confirmado_em = new Date().toISOString();
+        }
+
+        return baseData;
+      });
 
       // Inserir na tabela de histórico (sorteados)
       const { error } = await supabase
@@ -288,6 +496,16 @@ const Sorteio = () => {
 
       if (error) throw error;
 
+      // Preparar winners com informações do prêmio
+      const winnersComPremio = vencedores.map(w => ({
+        ...w,
+        premio: sorteioComPremios && proximoPremio ? {
+          id: proximoPremio.id,
+          nome: proximoPremio.nome,
+          descricao: proximoPremio.descricao,
+        } : undefined,
+      }));
+
       // Atualizar lista temporária: remover vencedores da pool atual
       const novosExcluidos = new Set(excludedIds);
       vencedores.forEach(v => novosExcluidos.add(v.id));
@@ -295,22 +513,22 @@ const Sorteio = () => {
       persistExcluded(novosExcluidos);
       setParticipantes(prev => prev.filter(p => !novosExcluidos.has(p.id)));
 
-      // Mostrar vencedores
-      const vencedoresExibicao = vencedores.map(v => ({ 
-        id: v.id,
-        nome: v.nome, 
-        setor: v.setor, 
-        cidade: v.cidade 
-      }));
-      setWinners(vencedoresExibicao);
+      // Exibir vencedores
+      setWinners(winnersComPremio);
       setShowWinners(true);
-      setIsAnimating(false);
+
+      // Mostrar countdown APENAS no modo com prêmios
+      if (sorteioComPremios && numVencedores === 1 && vencedores.length > 0) {
+        setCurrentWinnerId(vencedores[0].id);
+        setShowCountdown(true);
+      }
 
       toast({
         title: 'Sorteio realizado!',
-        description: `${numVencedores} vencedor(es) sorteado(s) e removido(s) da lista temporária!`,
+        description: `${vencedores.length} vencedor(es) sorteado(s) com sucesso!`,
       });
     } catch (error) {
+      console.error('Erro ao sortear:', error);
       toast({
         title: 'Erro ao realizar sorteio',
         description: 'Tente novamente mais tarde.',
@@ -319,6 +537,7 @@ const Sorteio = () => {
       setIsAnimating(false);
     } finally {
       setIsSorteando(false);
+      setIsAnimating(false);
     }
   };
 
@@ -328,6 +547,13 @@ const Sorteio = () => {
     setNumVencedores(1);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    
+    // Resetar estados da sequência
+    setEmSequencia(false);
+    setSequenciaTotal(0);
+    setSequenciaAtual(0);
+    setSequenciaVencedores([]);
+    setAguardandoProximo(false);
   };
 
   const handleConfirmWinner = async () => {
@@ -372,8 +598,16 @@ const Sorteio = () => {
       setShowCountdown(false);
       setCurrentWinnerId(null);
 
-      // Atualizar lista de prêmios
-      await loadPremiosDisponiveis();
+      // Se estiver em sequência, aguardar próximo sorteio
+      if (emSequencia) {
+        setAguardandoProximo(true);
+        
+        // Recarregar prêmios antes de continuar
+        await loadPremiosDisponiveis();
+      } else {
+        // Atualizar lista de prêmios normalmente
+        await loadPremiosDisponiveis();
+      }
     } catch (error) {
       toast({
         title: 'Erro ao confirmar',
@@ -438,8 +672,16 @@ const Sorteio = () => {
       setShowCountdown(false);
       setCurrentWinnerId(null);
 
-      // Atualizar lista de prêmios
-      await loadPremiosDisponiveis();
+      // Se estiver em sequência, aguardar próximo sorteio
+      if (emSequencia) {
+        setAguardandoProximo(true);
+        
+        // Recarregar prêmios antes de continuar
+        await loadPremiosDisponiveis();
+      } else {
+        // Atualizar lista de prêmios normalmente
+        await loadPremiosDisponiveis();
+      }
     } catch (error) {
       toast({
         title: 'Erro ao registrar',
@@ -590,13 +832,72 @@ const Sorteio = () => {
         </h1>
 
         {/* Próximo prêmio a ser sorteado */}
-        {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && (
+        {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && !emSequencia && (
           <div className="text-center mb-8 p-6 bg-card/50 rounded-lg border-2 border-primary/20 animate-fade-in">
             <p className="text-lg text-muted-foreground mb-2">Próximo prêmio a ser sorteado:</p>
             <h3 className="text-3xl font-bold text-primary mb-2">{proximoPremio.nome}</h3>
             {proximoPremio.descricao && (
               <p className="text-muted-foreground">{proximoPremio.descricao}</p>
             )}
+          </div>
+        )}
+
+        {/* Indicador de progresso da sequência */}
+        {emSequencia && (
+          <div className="text-center mb-8 p-6 bg-primary/10 rounded-lg border-2 border-primary/30 animate-fade-in">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="text-4xl font-bold text-primary">
+                {sequenciaAtual} / {sequenciaTotal}
+              </div>
+            </div>
+            <p className="text-lg font-semibold text-foreground mb-1">
+              Sorteio {sequenciaAtual} de {sequenciaTotal}
+            </p>
+            {proximoPremio && (
+              <>
+                <p className="text-sm text-muted-foreground mb-2">Prêmio atual:</p>
+                <p className="text-xl font-bold text-primary">{proximoPremio.nome}</p>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Controles de sequência - Aguardando próximo sorteio */}
+        {aguardandoProximo && emSequencia && (
+          <div className="text-center mb-8 p-6 bg-card/50 rounded-lg border-2 border-primary/20 space-y-4 animate-fade-in">
+            <p className="text-lg font-semibold text-foreground">
+              Sorteio {sequenciaAtual} de {sequenciaTotal} concluído
+            </p>
+            <div className="flex justify-center gap-4">
+              {sequenciaAtual < sequenciaTotal ? (
+                <>
+                  <Button
+                    onClick={proximoSorteio}
+                    size="lg"
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                    Próximo Sorteio ({sequenciaAtual + 1}/{sequenciaTotal})
+                  </Button>
+                  <Button
+                    onClick={cancelarSequencia}
+                    variant="destructive"
+                    size="lg"
+                  >
+                    Cancelar Sequência
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={finalizarSequencia}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  Ver Resumo Final
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -619,24 +920,49 @@ const Sorteio = () => {
         {showWinners && winners.length > 0 && (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 
-                className="text-3xl font-bold mb-2"
-                style={{ 
-                  color: 'white',
-                  textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)'
-                }}
-              >
-                🎉 Vencedores Sorteados! 🎉
-              </h2>
-              <p 
-                className="text-lg"
-                style={{ 
-                  color: 'white',
-                  textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8)'
-                }}
-              >
-                Clique nos cartões para revelar os ganhadores
-              </p>
+              {emSequencia || sequenciaVencedores.length > 0 ? (
+                <>
+                  <h2 
+                    className="text-3xl font-bold mb-2"
+                    style={{ 
+                      color: 'white',
+                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)'
+                    }}
+                  >
+                    🎉 Resumo da Sequência de Sorteios 🎉
+                  </h2>
+                  <p 
+                    className="text-lg mb-4"
+                    style={{ 
+                      color: 'white',
+                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8)'
+                    }}
+                  >
+                    {winners.length} de {sequenciaTotal} sorteio(s) realizado(s)
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 
+                    className="text-3xl font-bold mb-2"
+                    style={{ 
+                      color: 'white',
+                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)'
+                    }}
+                  >
+                    🎉 Vencedores Sorteados! 🎉
+                  </h2>
+                  <p 
+                    className="text-lg"
+                    style={{ 
+                      color: 'white',
+                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8)'
+                    }}
+                  >
+                    Clique nos cartões para revelar os ganhadores
+                  </p>
+                </>
+              )}
             </div>
             
             <div className="flex flex-wrap justify-center gap-6">
@@ -672,7 +998,7 @@ const Sorteio = () => {
         )}
 
         {/* Formulário de sorteio */}
-        {!showWinners && !isSorteando && (
+        {!showWinners && !isSorteando && !emSequencia && !aguardandoProximo && (
           <div className="max-w-md mx-auto space-y-6">
             <div className="space-y-4 bg-card p-8 rounded-lg border shadow-lg">
               <div className="text-center mb-4">
