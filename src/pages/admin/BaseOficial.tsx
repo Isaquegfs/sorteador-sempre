@@ -72,14 +72,22 @@ const BaseOficial = () => {
     const lines = text.split('\n').filter(line => line.trim());
     const dataLines = lines.slice(1); // Ignorar cabeçalho
     
-    return await Promise.all(dataLines.map(async line => {
+    // Filtra linhas com CPF válido
+    const validLines = dataLines.filter(line => {
+      const fields = line.split(',');
+      const cpf = fields[1]?.trim() || '';
+      return cpf.length > 0;
+    });
+    
+    return await Promise.all(validLines.map(async line => {
       const [nome, cpf, cidade, setor, email] = line.split(',').map(field => field.trim());
       
-      // Remove qualquer formatação do CPF, aceita apenas números
-      const cpfNumeros = cpf.replace(/\D/g, '');
+      // Remove o apóstrofo e qualquer formatação do CPF
+      let cpfLimpo = cpf.startsWith("'") ? cpf.substring(1) : cpf;
+      const cpfNumeros = cpfLimpo.replace(/\D/g, '');
       
       if (!/^\d{11}$/.test(cpfNumeros)) {
-        throw new Error(`CPF inválido: ${cpf}`);
+        throw new Error(`CPF inválido na linha: ${cpf}`);
       }
 
       return {
@@ -88,7 +96,7 @@ const BaseOficial = () => {
         cpf_censurado: censorCPF(cpfNumeros),
         cidade,
         setor,
-        email,
+        email: email || '',
       };
     }));
   };
@@ -99,35 +107,44 @@ const BaseOficial = () => {
     const workbook = XLSX.read(arrayBuffer, { type: 'array', codepage: 65001 });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    const data = XLSX.utils.sheet_to_json<{
-      nome: string;
-      cpf: string;
-      cidade: string;
-      setor: string;
-      email: string;
-    }>(worksheet);
+    const data = XLSX.utils.sheet_to_json(worksheet);
 
-    return await Promise.all(data.map(async row => {
+    // Filtra linhas vazias e mapeia os dados
+    const validRows = data.filter((row: any) => {
+      // Busca o CPF em diferentes variações de nome de coluna
+      const cpfValue = row.cpf || row.CPF || row.Cpf || '';
+      const cpfStr = cpfValue?.toString().trim() || '';
+      return cpfStr.length > 0;
+    });
+
+    return await Promise.all(validRows.map(async (row: any) => {
+      // Busca valores com case-insensitive
+      const getNormalizedValue = (key: string) => {
+        const lowerKey = key.toLowerCase();
+        const foundKey = Object.keys(row).find(k => k.toLowerCase() === lowerKey);
+        return foundKey ? row[foundKey] : '';
+      };
+
       // Remove o apóstrofo que o Excel adiciona automaticamente para preservar zeros à esquerda
-      let cpf = row.cpf?.toString().trim() || '';
+      let cpf = getNormalizedValue('cpf')?.toString().trim() || '';
       if (cpf.startsWith("'")) {
         cpf = cpf.substring(1);
       }
       
-      // Remove qualquer formatação do CPF, aceita apenas números
+      // Remove qualquer formatação do CPF (pontos, hífens, etc.), aceita apenas números
       const cpfNumeros = cpf.replace(/\D/g, '');
       
       if (!/^\d{11}$/.test(cpfNumeros)) {
-        throw new Error(`CPF inválido: ${cpf || 'vazio'}`);
+        throw new Error(`CPF inválido na linha: ${cpf || 'vazio'}`);
       }
 
       return {
-        nome: row.nome?.toString().trim() || '',
+        nome: getNormalizedValue('nome')?.toString().trim() || '',
         cpf_hash: await hashCPF(cpfNumeros),
         cpf_censurado: censorCPF(cpfNumeros),
-        cidade: row.cidade?.toString().trim() || '',
-        setor: row.setor?.toString().trim() || '',
-        email: row.email?.toString().trim() || '',
+        cidade: getNormalizedValue('cidade')?.toString().trim() || '',
+        setor: getNormalizedValue('setor')?.toString().trim() || '',
+        email: getNormalizedValue('email')?.toString().trim() || '',
       };
     }));
   };
