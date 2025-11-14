@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -301,255 +302,280 @@ const Configuracoes = () => {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Formulário de Inscrição</CardTitle>
-          <CardDescription>
-            Controle se o formulário público está aberto para novas inscrições
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="formulario-aberto">Status do Formulário</Label>
-              <p className="text-sm text-muted-foreground">
-                {formularioAberto ? 'Aberto para inscrições' : 'Fechado'}
-              </p>
-            </div>
-            <Switch
-              id="formulario-aberto"
-              checked={formularioAberto}
-              onCheckedChange={setFormularioAberto}
-            />
-          </div>
+      <Tabs defaultValue="geral" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="geral">Configurações Gerais</TabsTrigger>
+          <TabsTrigger value="dados">Gerenciar Dados</TabsTrigger>
+        </TabsList>
 
-          {/* Mensagem de status do agendamento */}
-          {getScheduleMessage() && (
-            <div className="p-3 bg-muted rounded-lg border">
-              <p className="text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {getScheduleMessage()}
-              </p>
-            </div>
-          )}
-
-          {/* Campos de agendamento */}
-          <div className="space-y-4 pt-4 border-t">
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">Fechamento Automático</Label>
-              <p className="text-sm text-muted-foreground">
-                Agende uma data e hora para fechar o formulário automaticamente
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="data-fechamento">Data de Fechamento</Label>
-                <Input
-                  id="data-fechamento"
-                  type="date"
-                  value={dataFechamento}
-                  onChange={(e) => setDataFechamento(e.target.value)}
-                  className="bg-background/50 border-border/50 hover:bg-background/80 transition-all"
+        <TabsContent value="geral" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Formulário de Inscrição</CardTitle>
+              <CardDescription>
+                Controle se o formulário público está aberto para novas inscrições
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="formulario-aberto">Status do Formulário</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {formularioAberto ? 'Aberto para inscrições' : 'Fechado'}
+                  </p>
+                </div>
+                <Switch
+                  id="formulario-aberto"
+                  checked={formularioAberto}
+                  onCheckedChange={setFormularioAberto}
                 />
               </div>
 
+              {/* Mensagem de status do agendamento */}
+              {getScheduleMessage() && (
+                <div className="p-4 bg-muted rounded-lg flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    {getScheduleMessage()}
+                  </p>
+                </div>
+              )}
+
+              {/* Seção de fechamento automático */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="fechamento-automatico">Fechamento Automático</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Agendar fechamento do formulário
+                    </p>
+                  </div>
+                  <Switch
+                    id="fechamento-automatico"
+                    checked={fechamentoAutomaticoAtivo}
+                    onCheckedChange={setFechamentoAutomaticoAtivo}
+                  />
+                </div>
+
+                {fechamentoAutomaticoAtivo && (
+                  <div className="space-y-4 pl-4 border-l-2 border-muted">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="dataFechamento">
+                          <CalendarIcon className="inline mr-2 h-4 w-4" />
+                          Data
+                        </Label>
+                        <Input
+                          id="dataFechamento"
+                          type="date"
+                          value={dataFechamento}
+                          onChange={(e) => setDataFechamento(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="horaFechamento">
+                          <Clock className="inline mr-2 h-4 w-4" />
+                          Horário
+                        </Label>
+                        <Input
+                          id="horaFechamento"
+                          type="time"
+                          value={horaFechamento}
+                          onChange={(e) => setHoraFechamento(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    
+                    {dataFechamento && horaFechamento && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelSchedule}
+                        className="w-full"
+                      >
+                        Cancelar Agendamento
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Configurações do Sorteio
+              </CardTitle>
+              <CardDescription>
+                Configure o comportamento do sorteador
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="hora-fechamento">Hora de Fechamento</Label>
+                <Label htmlFor="tempoConfirmacao">Tempo de Confirmação (segundos)</Label>
                 <Input
-                  id="hora-fechamento"
-                  type="time"
-                  value={horaFechamento}
-                  onChange={(e) => setHoraFechamento(e.target.value)}
-                  className="bg-background/50 border-border/50 hover:bg-background/80 transition-all"
+                  id="tempoConfirmacao"
+                  type="number"
+                  min={1}
+                  max={300}
+                  value={tempoConfirmacao}
+                  onChange={(e) => setTempoConfirmacao(Number(e.target.value))}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Tempo usado quando o contador está ativo
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="sorteioComPremios">Ativar sorteio com prêmios</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Quando ativado, o sorteio exibirá prêmios, timer de confirmação e validação obrigatória
+                  </p>
+                </div>
+                <Switch
+                  id="sorteioComPremios"
+                  checked={sorteioComPremios}
+                  onCheckedChange={setSorteioComPremios}
                 />
               </div>
-            </div>
 
-            {fechamentoAutomaticoAtivo && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelSchedule}
-                className="gap-2"
-              >
-                <Clock className="h-4 w-4" />
-                Desativar fechamento automático
-              </Button>
-            )}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="ativarContadorTempo">Ativar contador de tempo</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Exibe o timer de confirmação mesmo em sorteios sem prêmios (opcional)
+                  </p>
+                </div>
+                <Switch
+                  id="ativarContadorTempo"
+                  checked={ativarContadorTempo}
+                  onCheckedChange={setAtivarContadorTempo}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Configurações'
+              )}
+            </Button>
           </div>
+        </TabsContent>
 
-          <Button onClick={handleSave} disabled={isSaving} className="w-full md:w-auto">
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              'Salvar Configurações'
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+        <TabsContent value="dados" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciar Dados</CardTitle>
+              <CardDescription>
+                Ações perigosas que afetam os dados do sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <h3 className="font-semibold text-destructive mb-2">Limpar Tabela de Participantes</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Esta ação irá remover todos os participantes cadastrados no sorteio atual.
+                    Os dados da base oficial não serão afetados.
+                  </p>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" disabled={isClearing}>
+                        {isClearing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Limpando...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Limpar Tabela
+                          </>
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Deseja realmente limpar a tabela? Todos os dados cadastrados serão perdidos.
+                          Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Não</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearTable} className="bg-destructive hover:bg-destructive/90">
+                          Sim, limpar tabela
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Configurações do Sorteio
-          </CardTitle>
-          <CardDescription>
-            Configure o comportamento do sorteador
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="tempoConfirmacao">Tempo de Confirmação (segundos)</Label>
-            <Input
-              id="tempoConfirmacao"
-              type="number"
-              min={1}
-              max={300}
-              value={tempoConfirmacao}
-              onChange={(e) => setTempoConfirmacao(Number(e.target.value))}
-            />
-            <p className="text-sm text-muted-foreground">
-              Tempo usado quando o contador está ativo
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between space-x-2">
-            <div className="space-y-0.5">
-              <Label htmlFor="sorteioComPremios">Ativar sorteio com prêmios</Label>
-              <p className="text-sm text-muted-foreground">
-                Quando ativado, o sorteio exibirá prêmios, timer de confirmação e validação obrigatória
-              </p>
-            </div>
-            <Switch
-              id="sorteioComPremios"
-              checked={sorteioComPremios}
-              onCheckedChange={setSorteioComPremios}
-            />
-          </div>
-
-          <div className="flex items-center justify-between space-x-2">
-            <div className="space-y-0.5">
-              <Label htmlFor="ativarContadorTempo">Ativar contador de tempo</Label>
-              <p className="text-sm text-muted-foreground">
-                Exibe o timer de confirmação mesmo em sorteios sem prêmios (opcional)
-              </p>
-            </div>
-            <Switch
-              id="ativarContadorTempo"
-              checked={ativarContadorTempo}
-              onCheckedChange={setAtivarContadorTempo}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Gerenciar Dados</CardTitle>
-          <CardDescription>
-            Ações perigosas que afetam os dados do sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-              <h3 className="font-semibold text-destructive mb-2">Limpar Tabela de Participantes</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Esta ação irá remover todos os participantes cadastrados no sorteio atual.
-                Os dados da base oficial não serão afetados.
-              </p>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isClearing}>
-                    {isClearing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Limpando...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Limpar Tabela
-                      </>
-                    )}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Deseja realmente limpar a tabela? Todos os dados cadastrados serão perdidos.
-                      Esta ação não pode ser desfeita.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Não</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearTable} className="bg-destructive hover:bg-destructive/90">
-                      Sim, limpar tabela
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-
-            <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-              <h3 className="font-semibold text-destructive mb-2">Limpar Base Oficial</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                ⚠️ Esta ação irá remover <strong>TODOS</strong> os registros da Base Oficial permanentemente.
-                Esta ação não pode ser desfeita e afetará a validação de participantes.
-              </p>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="destructive" 
-                    disabled={isClearingBase}
-                    className="bg-destructive/80 hover:bg-destructive border border-destructive"
-                  >
-                    {isClearingBase ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Limpando...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Limpar Base Oficial
-                      </>
-                    )}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="text-destructive">
-                      ⚠️ Tem certeza que deseja limpar toda a Base Oficial?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta ação removerá <strong>todos os registros permanentemente</strong> e não poderá ser desfeita.
-                      Os participantes não poderão mais ser validados até que uma nova base seja importada.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={handleClearBaseOficial} 
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
-                      Confirmar Limpeza
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <h3 className="font-semibold text-destructive mb-2">Limpar Base Oficial</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    ⚠️ Esta ação irá remover <strong>TODOS</strong> os registros da Base Oficial permanentemente.
+                    Esta ação não pode ser desfeita e afetará a validação de participantes.
+                  </p>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        disabled={isClearingBase}
+                        className="bg-destructive/80 hover:bg-destructive border border-destructive"
+                      >
+                        {isClearingBase ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Limpando...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Limpar Base Oficial
+                          </>
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-destructive">
+                          ⚠️ Tem certeza que deseja limpar toda a Base Oficial?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação removerá <strong>todos os registros permanentemente</strong> e não poderá ser desfeita.
+                          Os participantes não poderão mais ser validados até que uma nova base seja importada.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleClearBaseOficial} 
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Confirmar Limpeza
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
