@@ -72,22 +72,23 @@ const BaseOficial = () => {
     const lines = text.split('\n').filter(line => line.trim());
     const dataLines = lines.slice(1); // Ignorar cabeçalho
     
-    // Filtra linhas com CPF válido
+    // Filtra linhas com algum CPF informado (mesmo que formatado)
     const validLines = dataLines.filter(line => {
       const fields = line.split(',');
-      const cpf = fields[1]?.trim() || '';
-      return cpf.length > 0;
+      const rawCpf = (fields[1] ?? '').toString().trim();
+      return rawCpf.length > 0;
     });
     
-    return await Promise.all(validLines.map(async line => {
-      const [nome, cpf, cidade, setor, email] = line.split(',').map(field => field.trim());
+    const processed = await Promise.all(validLines.map(async line => {
+      const [nome, cpf, cidade, setor, email] = line.split(',').map(field => (field ?? '').toString().trim());
       
-      // Remove o apóstrofo e qualquer formatação do CPF
+      // Remove apóstrofo e formatação do CPF
       let cpfLimpo = cpf.startsWith("'") ? cpf.substring(1) : cpf;
       const cpfNumeros = cpfLimpo.replace(/\D/g, '');
       
+      // Pula linhas com CPF inválido ao invés de lançar erro
       if (!/^\d{11}$/.test(cpfNumeros)) {
-        throw new Error(`CPF inválido na linha: ${cpf}`);
+        return null;
       }
 
       return {
@@ -99,6 +100,11 @@ const BaseOficial = () => {
         email: email || '',
       };
     }));
+
+    // Remove nulos (linhas inválidas)
+    return processed.filter((r): r is {
+      nome: string; cpf_hash: string; cpf_censurado: string; cidade: string; setor: string; email: string;
+    } => Boolean(r));
   };
 
   const parseXLSX = async (file: File) => {
@@ -109,46 +115,43 @@ const BaseOficial = () => {
     const worksheet = workbook.Sheets[firstSheetName];
     const data = XLSX.utils.sheet_to_json(worksheet);
 
-    // Busca valores com case-insensitive
+    // Util para pegar valores com case-insensitive
     const getNormalizedValue = (row: any, key: string): string => {
       const lowerKey = key.toLowerCase();
       const foundKey = Object.keys(row).find(k => k.toLowerCase() === lowerKey);
       if (!foundKey) return '';
-      
       const value = row[foundKey];
-      if (value === null || value === undefined) return '';
-      return String(value).trim();
+      return value === null || value === undefined ? '' : String(value).trim();
     };
 
-    // Filtra linhas vazias e mapeia os dados
-    const validRows = data.filter((row: any) => {
-      const cpfStr = getNormalizedValue(row, 'cpf');
-      return cpfStr.length > 0;
-    });
-
-    return await Promise.all(validRows.map(async (row: any) => {
-      // Remove o apóstrofo que o Excel adiciona automaticamente para preservar zeros à esquerda
+    // Normaliza linhas e extrai CPF somente números; ignora linhas sem CPF
+    const normalized = (data as any[]).map((row) => {
       let cpf = getNormalizedValue(row, 'cpf');
-      if (cpf.startsWith("'")) {
-        cpf = cpf.substring(1);
-      }
-      
-      // Remove qualquer formatação do CPF (pontos, hífens, etc.), aceita apenas números
+      if (cpf.startsWith("'")) cpf = cpf.substring(1);
       const cpfNumeros = cpf.replace(/\D/g, '');
-      
-      if (!/^\d{11}$/.test(cpfNumeros)) {
-        throw new Error(`CPF inválido na linha: ${cpf || 'vazio'}`);
-      }
-
       return {
         nome: getNormalizedValue(row, 'nome'),
-        cpf_hash: await hashCPF(cpfNumeros),
-        cpf_censurado: censorCPF(cpfNumeros),
         cidade: getNormalizedValue(row, 'cidade'),
         setor: getNormalizedValue(row, 'setor'),
         email: getNormalizedValue(row, 'email'),
+        cpfNumeros,
       };
-    }));
+    }).filter(r => r.cpfNumeros.length > 0);
+
+    // Mantém apenas CPFs válidos (11 dígitos)
+    const valid = normalized.filter(r => /^\d{11}$/.test(r.cpfNumeros));
+
+    // Constrói payload final
+    const records = await Promise.all(valid.map(async (r) => ({
+      nome: r.nome,
+      cpf_hash: await hashCPF(r.cpfNumeros),
+      cpf_censurado: censorCPF(r.cpfNumeros),
+      cidade: r.cidade,
+      setor: r.setor,
+      email: r.email,
+    })));
+
+    return records;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,21 +211,48 @@ const BaseOficial = () => {
         if (record.cidade?.length > 200) throw new Error("Cidade muito longa (máx 200 caracteres)");
       }
 
-      // Inserir dados em lotes de 500 registros
+      // Deduplicar por CPF dentro do arquivo (evita erro de conflito no mesmo upload)
+      const originalCount = records.length;
+      const uniqueMap = new Map<string, typeof records[number]>();
+      for (const r of records) {
+        if (!uniqueMap.has(r.cpf_hash)) uniqueMap.set(r.cpf_hash, r);
+      }
+      records = Array.from(uniqueMap.values());
+
+      // Inserir dados em lotes de 500 usando upsert e ignorando duplicatas já existentes no banco
       const BATCH_SIZE = 500;
+      let successCount = 0;
+      let failedBatches = 0;
+      let lastError: any = null;
+
       for (let i = 0; i < records.length; i += BATCH_SIZE) {
         const batch = records.slice(i, i + BATCH_SIZE);
         const { error } = await supabase
           .from('base_oficial')
-          .insert(batch);
+          .upsert(batch, { onConflict: 'cpf_hash', ignoreDuplicates: true });
 
-        if (error) throw error;
+        if (error) {
+          failedBatches++;
+          lastError = error;
+          console.error('Erro ao inserir lote', Math.floor(i / BATCH_SIZE) + 1, error);
+          continue; // continua com os próximos lotes
+        }
+
+        successCount += batch.length;
       }
 
       toast({
-        title: 'Base oficial importada com sucesso!',
-        description: `${records.length} registro(s) adicionado(s).`,
+        title: 'Base oficial importada',
+        description: `${originalCount} registro(s) processados. Duplicatas foram ignoradas automaticamente.`,
       });
+
+      if (failedBatches > 0 && lastError) {
+        toast({
+          title: 'Alguns lotes falharam',
+          description: `Houve ${failedBatches} lote(s) com erro. Último erro: ${lastError.message || 'erro desconhecido'}`,
+          variant: 'destructive',
+        });
+      }
 
       loadBaseOficial();
     } catch (error) {
