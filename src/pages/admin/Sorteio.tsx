@@ -46,7 +46,7 @@ const Sorteio = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
-  const [titleColor, setTitleColor] = useState<string>('#0033A1');
+  const [titleColor, setTitleColor] = useState<string>('#FFFFFF');
   const [titleStyle, setTitleStyle] = useState<'cor' | 'degrade' | 'textura'>('cor');
   const [degradeInicio, setDegradeInicio] = useState<string>('#F27435');
   const [degradeFim, setDegradeFim] = useState<string>('#0033A1');
