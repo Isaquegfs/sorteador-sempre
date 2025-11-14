@@ -133,39 +133,27 @@ const Usuarios = () => {
     setIsCreating(true);
 
     try {
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.senha,
-        options: {
-          data: {
-            nome: newUser.nome,
-          },
+      // Chamar Edge Function para criar usuário de forma segura
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUser.email,
+          password: newUser.senha,
+          nome: newUser.nome,
+          role: newUser.role,
         },
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      if (authData.user) {
-        // Adicionar role ao usuário
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert([{
-            user_id: authData.user.id,
-            role: newUser.role,
-          }]);
+      toast({
+        title: 'Usuário criado com sucesso!',
+        description: `${newUser.nome} foi adicionado ao sistema.`,
+      });
 
-        if (roleError) throw roleError;
-
-        toast({
-          title: 'Usuário criado com sucesso!',
-          description: `${newUser.nome} foi adicionado ao sistema.`,
-        });
-
-        setOpenCreateDialog(false);
-        setNewUser({ nome: '', email: '', senha: '', role: 'moderator' });
-        loadUsuarios();
-      }
+      setOpenCreateDialog(false);
+      setNewUser({ nome: '', email: '', senha: '', role: 'moderator' });
+      loadUsuarios();
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
       toast({
