@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSidebar } from '@/components/ui/sidebar';
 import { selectRandomItems } from '@/lib/random';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -776,7 +777,7 @@ const Sorteio = () => {
 
       {/* Lista de próximos prêmios - lado esquerdo */}
       {sorteioComPremios && proximoPremio && getProximos4Premios().length > 0 && !showWinners && !isAnimating && (
-        <div className="fixed left-4 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
           {mostrarListaPremios ? (
             <div className="bg-card/70 backdrop-blur-sm border border-primary/20 rounded-lg shadow-lg max-w-[250px] animate-fade-in">
               <div className="p-4">
