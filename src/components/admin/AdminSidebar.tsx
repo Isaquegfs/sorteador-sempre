@@ -1,4 +1,4 @@
-import { Home, Sparkles, Users, Database, Settings, UserCog, Info, Trophy, Palette } from 'lucide-react';
+import { Home, Sparkles, Users, Database, Settings, UserCog, Info, Trophy, Palette, Gift } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -20,6 +20,7 @@ export function AdminSidebar() {
     { title: 'Dashboard', url: '/admin', icon: Home },
     { title: 'Participantes', url: '/admin/participantes', icon: Users },
     { title: 'Base Oficial', url: '/admin/base-oficial', icon: Database },
+    { title: 'Prêmios', url: '/admin/premios', icon: Gift },
     { title: 'Sorteio', url: '/admin/sorteio', icon: Sparkles },
     { title: 'Histórico', url: '/admin/historico', icon: Trophy },
   ];
