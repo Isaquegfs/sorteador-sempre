@@ -156,6 +156,19 @@ const Configuracoes = () => {
 
       if (error) throw error;
 
+      // Atualizar tempo de confirmação e sorteio com prêmios
+      if (sistemaConfigId) {
+        const { error: configError } = await supabase
+          .from('sistema_config')
+          .update({ 
+            tempo_confirmacao_segundos: tempoConfirmacao,
+            sorteio_com_premios: sorteioComPremios
+          })
+          .eq('id', sistemaConfigId);
+
+        if (configError) throw configError;
+      }
+
       toast({
         title: 'Configurações salvas com sucesso!',
       });
@@ -427,58 +440,6 @@ const Configuracoes = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Configuração de tempo de confirmação */}
-            <div className="p-4 bg-muted/50 rounded-lg border">
-              <h3 className="font-semibold mb-2">Tempo de Confirmação</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Defina o tempo (em segundos) que o contador regressivo exibirá após sortear um vencedor.
-              </p>
-              <div className="flex gap-4 items-end">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="tempo-confirmacao">Segundos</Label>
-                  <Input
-                    id="tempo-confirmacao"
-                    type="number"
-                    min="10"
-                    max="300"
-                    value={tempoConfirmacao}
-                    onChange={(e) => setTempoConfirmacao(parseInt(e.target.value) || 40)}
-                    className="bg-background/50 border-border/50"
-                    onBlur={async (e) => {
-                      const valor = parseInt(e.target.value) || 40;
-                      try {
-                        const { data: config } = await supabase
-                          .from('sistema_config')
-                          .select('id')
-                          .single();
-
-                        if (config) {
-                          await supabase
-                            .from('sistema_config')
-                            .update({ tempo_confirmacao_segundos: valor })
-                            .eq('id', config.id);
-                        } else {
-                          await supabase
-                            .from('sistema_config')
-                            .insert({ tempo_confirmacao_segundos: valor });
-                        }
-
-                        toast({
-                          title: 'Tempo atualizado',
-                          description: `Contador configurado para ${valor} segundos.`,
-                        });
-                      } catch (error) {
-                        toast({
-                          title: 'Erro ao salvar',
-                          variant: 'destructive',
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
             <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
               <h3 className="font-semibold text-destructive mb-2">Limpar Tabela de Participantes</h3>
               <p className="text-sm text-muted-foreground mb-4">
