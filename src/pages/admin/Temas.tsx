@@ -87,7 +87,6 @@ const Temas = () => {
       if (error) throw error;
       setTemas((data as Tema[]) || []);
     } catch (error) {
-      console.error('Erro ao carregar temas:', error);
       toast({
         title: 'Erro ao carregar temas',
         variant: 'destructive',
@@ -334,7 +333,6 @@ const Temas = () => {
       // Recarregar temas
       await loadTemas();
     } catch (error) {
-      console.error('Erro ao salvar tema:', error);
       toast({
         title: editingId ? 'Erro ao atualizar tema' : 'Erro ao criar tema',
         variant: 'destructive',
@@ -360,7 +358,6 @@ const Temas = () => {
 
       await loadTemas();
     } catch (error) {
-      console.error('Erro ao ativar tema:', error);
       toast({
         title: 'Erro ao ativar tema',
         variant: 'destructive',
@@ -386,7 +383,6 @@ const Temas = () => {
 
       await loadTemas();
     } catch (error) {
-      console.error('Erro ao desativar tema:', error);
       toast({
         title: 'Erro ao desativar tema',
         variant: 'destructive',
@@ -420,7 +416,6 @@ const Temas = () => {
 
       await loadTemas();
     } catch (error) {
-      console.error('Erro ao deletar tema:', error);
       toast({
         title: 'Erro ao deletar tema',
         variant: 'destructive',

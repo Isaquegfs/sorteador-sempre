@@ -77,7 +77,6 @@ const Configuracoes = () => {
         setTempoConfirmacao(configData.tempo_confirmacao_segundos);
       }
     } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
       toast({
         title: 'Erro ao carregar configurações',
         variant: 'destructive',
@@ -101,7 +100,7 @@ const Configuracoes = () => {
         await loadConfig();
       }
     } catch (error) {
-      console.error('Erro ao verificar agendamento:', error);
+      // Silently handle error
     }
   };
 
@@ -157,7 +156,6 @@ const Configuracoes = () => {
 
       setFechamentoAutomaticoAtivo(updateData.fechamento_automatico_ativo);
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
       toast({
         title: 'Erro ao salvar configurações',
         variant: 'destructive',
@@ -183,7 +181,6 @@ const Configuracoes = () => {
         description: 'Todos os cadastros de participantes foram removidos.',
       });
     } catch (error) {
-      console.error('Erro ao limpar tabela:', error);
       toast({
         title: 'Erro ao limpar tabela',
         description: 'Não foi possível limpar a tabela de participantes.',
@@ -210,7 +207,6 @@ const Configuracoes = () => {
         description: 'Todos os registros da Base Oficial foram removidos.',
       });
     } catch (error) {
-      console.error('Erro ao limpar Base Oficial:', error);
       toast({
         title: 'Erro ao limpar Base Oficial',
         description: 'Não foi possível limpar a Base Oficial.',
@@ -244,7 +240,6 @@ const Configuracoes = () => {
         title: 'Agendamento cancelado com sucesso!',
       });
     } catch (error) {
-      console.error('Erro ao cancelar agendamento:', error);
       toast({
         title: 'Erro ao cancelar agendamento',
         variant: 'destructive',
@@ -425,7 +420,6 @@ const Configuracoes = () => {
                           description: `Contador configurado para ${valor} segundos.`,
                         });
                       } catch (error) {
-                        console.error('Erro ao salvar tempo:', error);
                         toast({
                           title: 'Erro ao salvar',
                           variant: 'destructive',

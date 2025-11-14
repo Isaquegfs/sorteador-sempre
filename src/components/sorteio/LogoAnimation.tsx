@@ -25,7 +25,7 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
         setLogoUrl(data.logo_url);
       }
     } catch (error) {
-      console.error('Erro ao carregar logo do tema:', error);
+      // Silently fail - use default logo
     }
   };
 

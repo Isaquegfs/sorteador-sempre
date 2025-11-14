@@ -29,7 +29,7 @@ export const PublicPageLayout = ({ children }: PublicPageLayoutProps) => {
         setLogoUrl(data.logo_url);
       }
     } catch (error) {
-      console.error('Erro ao carregar tema ativo:', error);
+      // Silently fail - use default theme
     }
   };
 

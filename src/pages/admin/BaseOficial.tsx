@@ -58,7 +58,6 @@ const BaseOficial = () => {
       if (error) throw error;
       setBaseOficial(data || []);
     } catch (error) {
-      console.error('Erro ao carregar base oficial:', error);
       toast({
         title: 'Erro ao carregar base oficial',
         variant: 'destructive',
@@ -234,7 +233,6 @@ const BaseOficial = () => {
         if (error) {
           failedBatches++;
           lastError = error;
-          console.error('Erro ao inserir lote', Math.floor(i / BATCH_SIZE) + 1, error);
           continue; // continua com os próximos lotes
         }
 
@@ -256,7 +254,6 @@ const BaseOficial = () => {
 
       loadBaseOficial();
     } catch (error) {
-      console.error('Erro ao importar base:', error);
       toast({
         title: 'Erro ao importar base',
         description: error instanceof Error ? error.message : 'Verifique o formato do arquivo.',
@@ -285,7 +282,6 @@ const BaseOficial = () => {
       // Atualizar a lista localmente
       setBaseOficial(prev => prev.filter(item => item.id !== id));
     } catch (error) {
-      console.error('Erro ao excluir registro:', error);
       toast({
         title: 'Erro ao excluir registro',
         variant: 'destructive',
