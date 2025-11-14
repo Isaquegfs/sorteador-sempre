@@ -5,7 +5,7 @@ import { selectRandomItems } from '@/lib/random';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Sparkles, RotateCcw } from 'lucide-react';
+import { Loader2, Sparkles, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { LogoAnimation } from '@/components/sorteio/LogoAnimation';
 import { WinnerCard } from '@/components/sorteio/WinnerCard';
 import { InfinityLoader } from '@/components/sorteio/InfinityLoader';
@@ -79,6 +79,14 @@ const Sorteio = () => {
   const [sequenciaAtual, setSequenciaAtual] = useState(0);
   const [sequenciaVencedores, setSequenciaVencedores] = useState<Winner[]>([]);
   const [aguardandoProximo, setAguardandoProximo] = useState(false);
+  const [mostrarListaPremios, setMostrarListaPremios] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sorteio_mostrar_lista_premios');
+      return stored ? JSON.parse(stored) : true;
+    } catch {
+      return true;
+    }
+  });
   
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
   const persistExcluded = (set: Set<string>) => {
@@ -107,6 +115,14 @@ const Sorteio = () => {
     
     // Retornar os próximos 4 (ou menos se não houver)
     return premiosDisponiveis.slice(indexAtual + 1, indexAtual + 5);
+  };
+
+  const toggleListaPremios = () => {
+    const novoValor = !mostrarListaPremios;
+    setMostrarListaPremios(novoValor);
+    try {
+      localStorage.setItem('sorteio_mostrar_lista_premios', JSON.stringify(novoValor));
+    } catch {}
   };
 
   useEffect(() => {
@@ -761,26 +777,47 @@ const Sorteio = () => {
       {/* Lista de próximos prêmios - lado esquerdo */}
       {sorteioComPremios && proximoPremio && getProximos4Premios().length > 0 && !showWinners && !isAnimating && (
         <div className="fixed left-4 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
-          <div className="bg-card/70 backdrop-blur-sm border border-primary/20 rounded-lg p-4 shadow-lg max-w-[250px]">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-              Próximos Prêmios
-            </h4>
-            <div className="space-y-2">
-              {getProximos4Premios().map((premio, index) => (
-                <div 
-                  key={premio.id}
-                  className="flex items-start gap-2 text-sm"
-                >
-                  <span className="text-primary font-bold shrink-0">
-                    {index + 1}º
-                  </span>
-                  <span className="text-foreground/80 line-clamp-2">
-                    {premio.nome}
-                  </span>
+          {mostrarListaPremios ? (
+            <div className="bg-card/70 backdrop-blur-sm border border-primary/20 rounded-lg shadow-lg max-w-[250px] animate-fade-in">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Próximos Prêmios
+                  </h4>
+                  <button
+                    onClick={toggleListaPremios}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    title="Ocultar lista"
+                  >
+                    <EyeOff className="h-4 w-4" />
+                  </button>
                 </div>
-              ))}
+                <div className="space-y-2">
+                  {getProximos4Premios().map((premio, index) => (
+                    <div 
+                      key={premio.id}
+                      className="flex items-start gap-2 text-sm"
+                    >
+                      <span className="text-primary font-bold shrink-0">
+                        {index + 1}º
+                      </span>
+                      <span className="text-foreground/80 line-clamp-2">
+                        {premio.nome}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <button
+              onClick={toggleListaPremios}
+              className="bg-card/70 backdrop-blur-sm border border-primary/20 rounded-lg p-3 shadow-lg hover:bg-card/90 transition-all duration-300 group"
+              title="Mostrar lista de próximos prêmios"
+            >
+              <Eye className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            </button>
+          )}
         </div>
       )}
 
