@@ -103,25 +103,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Criar profile do usuário
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .insert({
-        id: newUser.user.id,
-        nome: nome,
-        email: email,
-      })
-
-    if (profileError) {
-      console.error('Error creating profile:', profileError)
-      // Tentar deletar o usuário criado se falhar ao criar profile
-      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
-      return new Response(
-        JSON.stringify({ error: 'Failed to create user profile' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
+    // O profile é criado automaticamente pelo trigger handle_new_user
+    
     // Inserir role usando admin client
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
@@ -132,8 +115,7 @@ Deno.serve(async (req) => {
 
     if (roleError) {
       console.error('Error assigning role:', roleError)
-      // Tentar deletar o usuário e profile criados se falhar ao atribuir role
-      await supabaseAdmin.from('profiles').delete().eq('id', newUser.user.id)
+      // Tentar deletar o usuário criado (o trigger deletará o profile automaticamente)
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
       return new Response(
         JSON.stringify({ error: 'Failed to assign role to user' }),
