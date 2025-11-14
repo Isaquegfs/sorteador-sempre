@@ -95,7 +95,8 @@ const BaseOficial = () => {
 
   const parseXLSX = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer);
+    // Força UTF-8 para preservar caracteres especiais
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', codepage: 65001 });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     const data = XLSX.utils.sheet_to_json<{
@@ -107,10 +108,14 @@ const BaseOficial = () => {
     }>(worksheet);
 
     return await Promise.all(data.map(async row => {
-      const cpf = row.cpf?.toString().trim();
+      // Remove o apóstrofo que o Excel adiciona automaticamente para preservar zeros à esquerda
+      let cpf = row.cpf?.toString().trim() || '';
+      if (cpf.startsWith("'")) {
+        cpf = cpf.substring(1);
+      }
       
       // Remove qualquer formatação do CPF, aceita apenas números
-      const cpfNumeros = cpf?.replace(/\D/g, '') || '';
+      const cpfNumeros = cpf.replace(/\D/g, '');
       
       if (!/^\d{11}$/.test(cpfNumeros)) {
         throw new Error(`CPF inválido: ${cpf || 'vazio'}`);

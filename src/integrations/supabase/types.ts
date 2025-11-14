@@ -211,33 +211,48 @@ export type Database = {
           ativo: boolean | null
           cor_titulo: string | null
           created_at: string | null
+          degrade_direcao: string | null
+          degrade_fim: string | null
+          degrade_inicio: string | null
           descricao: string | null
+          estilo_titulo: string | null
           id: string
           imagem_url: string
           logo_url: string | null
           nome: string
+          textura_url: string | null
           updated_at: string | null
         }
         Insert: {
           ativo?: boolean | null
           cor_titulo?: string | null
           created_at?: string | null
+          degrade_direcao?: string | null
+          degrade_fim?: string | null
+          degrade_inicio?: string | null
           descricao?: string | null
+          estilo_titulo?: string | null
           id?: string
           imagem_url: string
           logo_url?: string | null
           nome: string
+          textura_url?: string | null
           updated_at?: string | null
         }
         Update: {
           ativo?: boolean | null
           cor_titulo?: string | null
           created_at?: string | null
+          degrade_direcao?: string | null
+          degrade_fim?: string | null
+          degrade_inicio?: string | null
           descricao?: string | null
+          estilo_titulo?: string | null
           id?: string
           imagem_url?: string
           logo_url?: string | null
           nome?: string
+          textura_url?: string | null
           updated_at?: string | null
         }
         Relationships: []
