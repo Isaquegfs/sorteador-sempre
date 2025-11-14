@@ -90,15 +90,20 @@ const Usuarios = () => {
 
       if (rolesError) throw rolesError;
 
+      console.log('Profiles carregados:', profiles);
+      console.log('Roles carregados:', roles);
+
       // Combinar profiles com roles
       const usuariosComRoles = profiles?.map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.id);
+        console.log(`Usuário ${profile.nome}: profile.id=${profile.id}, role encontrada:`, userRole);
         return {
           ...profile,
           role: userRole?.role || 'user',
         };
       });
 
+      console.log('Usuários finais com roles:', usuariosComRoles);
       setUsuarios(usuariosComRoles || []);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
