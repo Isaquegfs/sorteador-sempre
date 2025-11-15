@@ -20,3 +20,17 @@ export const participanteSchema = z.object({
 });
 
 export type ParticipanteFormData = z.infer<typeof participanteSchema>;
+
+export const loginSchema = z.object({
+  email: z.string()
+    .trim()
+    .email('E-mail inválido')
+    .max(255, 'E-mail deve ter no máximo 255 caracteres')
+    .toLowerCase(),
+  
+  password: z.string()
+    .min(6, 'Senha deve ter pelo menos 6 caracteres')
+    .max(72, 'Senha deve ter no máximo 72 caracteres'),
+});
+
+export type LoginFormData = z.infer<typeof loginSchema>;

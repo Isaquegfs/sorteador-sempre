@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { PublicPageLayout } from '@/components/PublicPageLayout';
+import { loginSchema } from '@/lib/validation';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,9 +23,22 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Validar dados do formulário
+      const validation = loginSchema.safeParse(formData);
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast({
+          title: 'Erro de validação',
+          description: firstError.message,
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+        email: validation.data.email,
+        password: validation.data.password,
       });
 
       if (error) throw error;
