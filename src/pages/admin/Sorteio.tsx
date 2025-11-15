@@ -433,11 +433,6 @@ const Sorteio = () => {
       setSequenciaVencedores(prev => [...prev, winnerComPremio]);
 
       // Countdown será iniciado pelo onFlip do WinnerCard após a revelação
-
-      toast({
-        title: `Sorteio ${sequenciaAtual} de ${sequenciaTotal}`,
-        description: `${vencedor.nome} foi sorteado!`,
-      });
     } catch (error) {
       console.error('Erro ao sortear:', error);
       toast({
