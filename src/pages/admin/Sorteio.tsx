@@ -1041,7 +1041,7 @@ const Sorteio = () => {
         )}
 
         {/* Controles de sequência - Aguardando próximo sorteio */}
-        {aguardandoProximo && emSequencia && (
+        {aguardandoProximo && emSequencia && !isSorteando && !isAnimating && (
           <div className="relative">
             <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
             <div className={cn(
