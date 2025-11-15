@@ -144,8 +144,8 @@ const Configuracoes = () => {
 
       if (formularioAberto) {
         updateData.data_abertura = new Date().toISOString();
-        // Cancelar fechamento automático se reabrir manualmente
-        if (fechamentoAutomaticoAtivo) {
+        // Cancelar fechamento automático se reabrir manualmente e não houver novo agendamento
+        if (fechamentoAutomaticoAtivo && !dataFechamento && !horaFechamento) {
           updateData.fechamento_automatico_ativo = false;
         }
       } else {
