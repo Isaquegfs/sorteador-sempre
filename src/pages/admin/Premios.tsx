@@ -604,7 +604,7 @@ export default function Premios() {
       case 'Disponível':
         return 'default';
       case 'Sorteado':
-        return 'secondary';
+        return 'default'; // Usar default com classe customizada para laranja
       case 'Reprogramado':
         return 'outline';
       case 'Cancelado':
@@ -656,7 +656,10 @@ export default function Premios() {
             : '-'}
         </TableCell>
         <TableCell>
-          <Badge variant={getStatusVariant(premio.status)}>
+          <Badge 
+            variant={getStatusVariant(premio.status)}
+            className={premio.status === 'Sorteado' ? 'bg-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/90' : ''}
+          >
             {premio.status}
           </Badge>
         </TableCell>
@@ -931,7 +934,10 @@ export default function Premios() {
                           {premio.descricao || '-'}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="default">
+                          <Badge 
+                            variant="default"
+                            className="bg-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/90"
+                          >
                             {premio.status}
                           </Badge>
                         </TableCell>
