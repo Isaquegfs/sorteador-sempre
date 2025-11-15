@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, UserPlus, Key, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, Key, Trash2, UserCog } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,9 +54,12 @@ const Usuarios = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
+  const [openRoleDialog, setOpenRoleDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserRole, setSelectedUserRole] = useState<'admin' | 'moderator'>('moderator');
   
   const [newUser, setNewUser] = useState({
     nome: '',
@@ -231,6 +234,58 @@ const Usuarios = () => {
     }
   };
 
+  const handleUpdateRole = async () => {
+    if (!selectedUserId) return;
+
+    setIsUpdatingRole(true);
+
+    try {
+      // Primeiro, verificar se já existe uma role para este usuário
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', selectedUserId)
+        .single();
+
+      if (existingRole) {
+        // Atualizar role existente
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role: selectedUserRole })
+          .eq('user_id', selectedUserId);
+
+        if (error) throw error;
+      } else {
+        // Inserir nova role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: selectedUserId,
+            role: selectedUserRole,
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'Nível de acesso atualizado!',
+        description: 'As alterações foram salvas com sucesso.',
+      });
+
+      setOpenRoleDialog(false);
+      setSelectedUserId(null);
+      await loadUsuarios();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar nível de acesso',
+        description: error.message || 'Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -377,7 +432,75 @@ const Usuarios = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
+                          {/* Botão de editar nível de acesso */}
                           <Dialog 
+                            open={openRoleDialog && selectedUserId === usuario.id} 
+                            onOpenChange={(open) => {
+                              setOpenRoleDialog(open);
+                              if (open) {
+                                setSelectedUserId(usuario.id);
+                                setSelectedUserRole(usuario.role as 'admin' | 'moderator');
+                              } else {
+                                setSelectedUserId(null);
+                              }
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm" title="Alterar nível de acesso">
+                                <UserCog className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Alterar Nível de Acesso</DialogTitle>
+                                <DialogDescription>
+                                  Altere o nível de acesso de {usuario.nome}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="role-select">Nível de acesso</Label>
+                                  <Select
+                                    value={selectedUserRole}
+                                    onValueChange={(value: 'admin' | 'moderator') => 
+                                      setSelectedUserRole(value)
+                                    }
+                                  >
+                                    <SelectTrigger id="role-select">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="admin">Administrador</SelectItem>
+                                      <SelectItem value="moderator">Moderador</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="text-xs text-muted-foreground">
+                                    {selectedUserRole === 'admin' 
+                                      ? 'Administradores têm acesso total ao sistema'
+                                      : 'Moderadores têm acesso limitado ao sistema'}
+                                  </p>
+                                </div>
+
+                                <Button 
+                                  onClick={handleUpdateRole} 
+                                  disabled={isUpdatingRole}
+                                  className="w-full"
+                                >
+                                  {isUpdatingRole ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Atualizando...
+                                    </>
+                                  ) : (
+                                    'Salvar Alterações'
+                                  )}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          {/* Botão de alterar senha */}
+                          <Dialog
                             open={openPasswordDialog && selectedUserId === usuario.id} 
                             onOpenChange={(open) => {
                               setOpenPasswordDialog(open);
