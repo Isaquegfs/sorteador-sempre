@@ -78,8 +78,23 @@ Deno.serve(async (req) => {
     const now = new Date();
     const scheduledDate = new Date(config.data_fechamento_agendado);
 
-    console.log('Data atual:', now);
-    console.log('Data agendada:', scheduledDate);
+    console.log('Data atual (UTC):', now.toISOString());
+    console.log('Data agendada (UTC):', scheduledDate.toISOString());
+
+    // Formatar horários para debug em Brasília
+    const formatBrTime = (date: Date) => {
+      return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        dateStyle: 'short',
+        timeStyle: 'medium'
+      }).format(date);
+    };
+
+    const currentTimeBr = formatBrTime(now);
+    const scheduledTimeBr = formatBrTime(scheduledDate);
+    
+    console.log('Data atual (Brasília):', currentTimeBr);
+    console.log('Data agendada (Brasília):', scheduledTimeBr);
 
     // Verificar se chegou o momento de fechar
     if (now >= scheduledDate && config.aberto) {
@@ -105,7 +120,8 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           message: 'Formulário fechado automaticamente',
-          closed_at: now.toISOString()
+          closed_at: now.toISOString(),
+          closed_at_br: formatBrTime(now)
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
@@ -117,7 +133,9 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         message: 'Verificação concluída - formulário ainda aberto',
         scheduled_for: scheduledDate.toISOString(),
-        current_time: now.toISOString()
+        scheduled_for_br: scheduledTimeBr,
+        current_time: now.toISOString(),
+        current_time_br: currentTimeBr
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
