@@ -47,7 +47,7 @@ const AdminLayout = () => {
         <AdminSidebar />
         
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center justify-between px-4">
+          <header className="h-12 border-b flex items-center justify-between px-4 shrink-0">
             <SidebarTrigger />
             <Button
               variant="ghost"
@@ -60,7 +60,7 @@ const AdminLayout = () => {
             </Button>
           </header>
 
-          <main className="flex-1 p-6">
+          <main className="flex-1 overflow-auto">
             <Outlet />
           </main>
         </div>
