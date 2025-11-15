@@ -18,15 +18,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Trash2, Clock, Calendar as CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, Trash2, Clock, Calendar as CalendarIcon, PlayCircle } from 'lucide-react';
+import { parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+
+const TIMEZONE = 'America/Sao_Paulo';
 
 const Configuracoes = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isClearingBase, setIsClearingBase] = useState(false);
+  const [isCheckingNow, setIsCheckingNow] = useState(false);
   const [formularioAberto, setFormularioAberto] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
   const [dataFechamento, setDataFechamento] = useState('');
@@ -36,17 +41,27 @@ const Configuracoes = () => {
   const [sorteioComPremios, setSorteioComPremios] = useState(false);
   const [ativarContadorTempo, setAtivarContadorTempo] = useState(false);
   const [sistemaConfigId, setSistemaConfigId] = useState<string | null>(null);
+  const [currentTimeBr, setCurrentTimeBr] = useState('');
+  const [checkNowResult, setCheckNowResult] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadConfig();
     
+    // Atualizar horário de Brasília a cada segundo
+    const timeInterval = setInterval(() => {
+      setCurrentTimeBr(formatInTimeZone(new Date(), TIMEZONE, 'dd/MM/yyyy HH:mm:ss'));
+    }, 1000);
+    
     // Verificar status do agendamento a cada minuto
-    const interval = setInterval(() => {
+    const scheduleInterval = setInterval(() => {
       checkSchedule();
-    }, 60000); // 1 minuto
+    }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(timeInterval);
+      clearInterval(scheduleInterval);
+    };
   }, []);
 
   const loadConfig = async () => {
@@ -65,9 +80,10 @@ const Configuracoes = () => {
         setFechamentoAutomaticoAtivo(data.fechamento_automatico_ativo || false);
         
         if (data.data_fechamento_agendado) {
-          const dataAgendada = new Date(data.data_fechamento_agendado);
-          setDataFechamento(format(dataAgendada, 'yyyy-MM-dd'));
-          setHoraFechamento(format(dataAgendada, 'HH:mm'));
+          // Converter UTC para horário de Brasília
+          const utcDate = new Date(data.data_fechamento_agendado);
+          setDataFechamento(formatInTimeZone(utcDate, TIMEZONE, 'yyyy-MM-dd'));
+          setHoraFechamento(formatInTimeZone(utcDate, TIMEZONE, 'HH:mm'));
         }
       }
 
@@ -105,16 +121,62 @@ const Configuracoes = () => {
         .single();
 
       if (data && !data.aberto && data.fechamento_automatico_ativo === false) {
-        // Formulário foi fechado automaticamente
         await loadConfig();
       }
     } catch (error) {
-      // Silently handle error
+      console.error('Erro ao verificar agendamento:', error);
+    }
+  };
+
+  const checkNow = async () => {
+    setIsCheckingNow(true);
+    setCheckNowResult(null);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-form-schedule`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const result = await response.json();
+      setCheckNowResult(result);
+
+      if (response.ok) {
+        toast({
+          title: 'Verificação executada',
+          description: result.message || 'Verificação concluída com sucesso',
+        });
+        
+        if (result.message?.includes('fechado')) {
+          await loadConfig();
+        }
+      } else {
+        toast({
+          title: 'Erro na verificação',
+          description: result.error || 'Erro desconhecido',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro ao verificar',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCheckingNow(false);
     }
   };
 
   const handleSave = async () => {
-    if (!configId) {
+    if (!configId || !sistemaConfigId) {
       toast({
         title: 'Erro',
         description: 'Configuração não encontrada',
@@ -124,63 +186,64 @@ const Configuracoes = () => {
     }
 
     setIsSaving(true);
-    
+
     try {
+      let dataFechamentoAgendado = null;
+      
+      if (fechamentoAutomaticoAtivo && dataFechamento && horaFechamento) {
+        // Criar data "ingênua" no horário de Brasília
+        const naiveDate = parse(
+          `${dataFechamento} ${horaFechamento}`,
+          'yyyy-MM-dd HH:mm',
+          new Date()
+        );
+        
+        // Converter para UTC
+        const utcDate = fromZonedTime(naiveDate, TIMEZONE);
+        dataFechamentoAgendado = utcDate.toISOString();
+      }
+
       const updateData: any = {
         aberto: formularioAberto,
+        fechamento_automatico_ativo: fechamentoAutomaticoAtivo,
+        data_fechamento_agendado: dataFechamentoAgendado,
         updated_at: new Date().toISOString(),
       };
 
-      // Se tem data e hora agendadas
-      if (dataFechamento && horaFechamento) {
-        const dataHoraFechamento = new Date(`${dataFechamento}T${horaFechamento}:00`);
-        updateData.data_fechamento_agendado = dataHoraFechamento.toISOString();
-        updateData.fechamento_automatico_ativo = true;
-      } else {
-        // Sem agendamento
-        updateData.data_fechamento_agendado = null;
-        updateData.fechamento_automatico_ativo = false;
-      }
-
       if (formularioAberto) {
         updateData.data_abertura = new Date().toISOString();
-        // Cancelar fechamento automático se reabrir manualmente e não houver novo agendamento
-        if (fechamentoAutomaticoAtivo && !dataFechamento && !horaFechamento) {
-          updateData.fechamento_automatico_ativo = false;
-        }
-      } else {
-        updateData.data_fechamento = new Date().toISOString();
+        updateData.data_fechamento = null;
       }
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('formulario_config')
         .update(updateData)
         .eq('id', configId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Atualizar tempo de confirmação e sorteio com prêmios
-      if (sistemaConfigId) {
-        const { error: configError } = await supabase
-          .from('sistema_config')
-          .update({ 
-            tempo_confirmacao_segundos: tempoConfirmacao,
-            sorteio_com_premios: sorteioComPremios,
-            ativar_contador_tempo: ativarContadorTempo
-          })
-          .eq('id', sistemaConfigId);
+      const { error: configError } = await supabase
+        .from('sistema_config')
+        .update({
+          tempo_confirmacao_segundos: tempoConfirmacao,
+          sorteio_com_premios: sorteioComPremios,
+          ativar_contador_tempo: ativarContadorTempo,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sistemaConfigId);
 
-        if (configError) throw configError;
-      }
+      if (configError) throw configError;
 
       toast({
-        title: 'Configurações salvas com sucesso!',
+        title: 'Configurações salvas',
+        description: 'As alterações foram aplicadas com sucesso',
       });
 
-      setFechamentoAutomaticoAtivo(updateData.fechamento_automatico_ativo);
+      await loadConfig();
     } catch (error) {
       toast({
-        title: 'Erro ao salvar configurações',
+        title: 'Erro ao salvar',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
@@ -275,14 +338,19 @@ const Configuracoes = () => {
       return null;
     }
 
-    const dataAgendada = new Date(`${dataFechamento}T${horaFechamento}:00`);
-    const dataFormatada = format(dataAgendada, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    const naiveDate = parse(
+      `${dataFechamento} ${horaFechamento}`,
+      'yyyy-MM-dd HH:mm',
+      new Date()
+    );
+    const formattedDate = formatInTimeZone(
+      fromZonedTime(naiveDate, TIMEZONE),
+      TIMEZONE,
+      "dd/MM/yyyy 'às' HH:mm",
+      { locale: ptBR }
+    );
 
-    if (formularioAberto) {
-      return `Formulário aberto — fecha automaticamente em ${dataFormatada}.`;
-    } else {
-      return `Formulário fechado automaticamente em ${dataFormatada}.`;
-    }
+    return `Fechamento agendado para ${formattedDate} (Horário de Brasília)`;
   };
 
   if (isLoading) {
@@ -375,7 +443,7 @@ const Configuracoes = () => {
                       <div className="space-y-2">
                         <Label htmlFor="horaFechamento">
                           <Clock className="inline mr-2 h-4 w-4" />
-                          Horário
+                          Horário (Brasília)
                         </Label>
                         <Input
                           id="horaFechamento"
@@ -387,14 +455,47 @@ const Configuracoes = () => {
                     </div>
                     
                     {dataFechamento && horaFechamento && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelSchedule}
-                        className="w-full"
-                      >
-                        Cancelar Agendamento
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelSchedule}
+                          className="w-full"
+                        >
+                          Cancelar Agendamento
+                        </Button>
+                        
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={checkNow}
+                          disabled={isCheckingNow}
+                          className="w-full"
+                        >
+                          {isCheckingNow ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Verificando...
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="mr-2 h-4 w-4" />
+                              Executar Verificação Agora
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                    
+                    {checkNowResult && (
+                      <Alert>
+                        <AlertTitle>Resultado da Verificação</AlertTitle>
+                        <AlertDescription>
+                          <pre className="mt-2 text-xs overflow-auto">
+                            {JSON.stringify(checkNowResult, null, 2)}
+                          </pre>
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                 )}
