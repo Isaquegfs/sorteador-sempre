@@ -45,9 +45,9 @@ export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoRev
       }}
       onClick={handleFlip}
     >
-      <div className="p-8">
+      <div className="p-6">
         {!isRevealed ? (
-          <div className="flex flex-col items-center justify-center min-h-[200px] space-y-4">
+          <div className="flex flex-col items-center justify-center min-h-[160px] space-y-4">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-full blur-xl opacity-50 animate-pulse" />
               <Sparkles className="h-16 w-16 text-primary relative z-10" />
@@ -58,7 +58,7 @@ export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoRev
           </div>
         ) : (
           <div 
-            className="min-h-[200px] flex flex-col justify-center space-y-4"
+            className="min-h-[160px] flex flex-col justify-center space-y-3"
             style={{
               animation: 'revealWinner 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
             }}
@@ -101,23 +101,23 @@ export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoRev
                 ) : (
                   // Layout normal para vencedor
                   <>
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <Sparkles className="h-6 w-6 text-secondary animate-pulse" />
-                      <h3 className="text-2xl font-bold text-center bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Sparkles className="h-5 w-5 text-secondary animate-pulse" />
+                      <h3 className="text-xl font-bold text-center bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         VENCEDOR!
                       </h3>
-                      <Sparkles className="h-6 w-6 text-secondary animate-pulse" />
+                      <Sparkles className="h-5 w-5 text-secondary animate-pulse" />
                     </div>
                     
                     <div className="text-center space-y-2">
-                      <p className="text-3xl font-bold text-foreground">
+                      <p className="text-2xl font-bold text-foreground">
                         {nome}
                       </p>
                       <div className="space-y-1">
-                        <p className="text-lg text-muted-foreground">
+                        <p className="text-base text-muted-foreground">
                           <span className="font-semibold">Setor:</span> {setor}
                         </p>
-                        <p className="text-lg text-muted-foreground">
+                        <p className="text-base text-muted-foreground">
                           <span className="font-semibold">Cidade:</span> {cidade}
                         </p>
                       </div>
@@ -125,15 +125,15 @@ export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoRev
 
                     {premio && (
                       <>
-                        <Separator className="my-4" />
-                        <div className="text-center space-y-2 bg-primary/5 p-4 rounded-lg">
+                        <Separator className="my-3" />
+                        <div className="text-center space-y-2 bg-primary/5 p-3 rounded-lg">
                           <div className="flex items-center justify-center gap-2 mb-2">
-                            <Gift className="h-5 w-5 text-primary" />
-                            <p className="text-sm text-muted-foreground font-medium">Prêmio</p>
+                            <Gift className="h-4 w-4 text-primary" />
+                            <p className="text-xs text-muted-foreground font-medium">Prêmio</p>
                           </div>
-                          <p className="text-xl font-bold text-primary">{premio.nome}</p>
+                          <p className="text-lg font-bold text-primary">{premio.nome}</p>
                           {premio.descricao && (
-                            <p className="text-sm text-muted-foreground">{premio.descricao}</p>
+                            <p className="text-xs text-muted-foreground">{premio.descricao}</p>
                           )}
                         </div>
                       </>
