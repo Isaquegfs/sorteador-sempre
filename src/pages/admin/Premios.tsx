@@ -94,19 +94,9 @@ interface ImportPreviewItem {
   erro?: string;
 }
 
-interface Sorteado {
-  id: string;
-  nome: string;
-  cidade: string;
-  setor: string;
-  sorteado_em: string;
-  premio_id: string | null;
-  confirmado: boolean | null;
-}
-
 export default function Premios() {
   const [premios, setPremios] = useState<Premio[]>([]);
-  const [sorteados, setSorteados] = useState<Sorteado[]>([]);
+  const [premiosSorteados, setPremiosSorteados] = useState<Premio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -132,7 +122,7 @@ export default function Premios() {
 
   useEffect(() => {
     loadPremios();
-    loadSorteados();
+    loadPremiosSorteados();
   }, []);
 
   const loadPremios = async () => {
@@ -157,18 +147,19 @@ export default function Premios() {
     }
   };
 
-  const loadSorteados = async () => {
+  const loadPremiosSorteados = async () => {
     try {
       const { data, error } = await supabase
-        .from('sorteados')
-        .select('id, nome, cidade, setor, sorteado_em, premio_id, confirmado')
-        .order('sorteado_em', { ascending: false });
+        .from('premios')
+        .select('*')
+        .eq('status', 'Sorteado')
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setSorteados((data || []) as Sorteado[]);
+      setPremiosSorteados((data || []) as Premio[]);
     } catch (error: any) {
       toast({
-        title: 'Erro ao carregar sorteados',
+        title: 'Erro ao carregar prêmios sorteados',
         description: error.message,
         variant: 'destructive',
       });
@@ -264,6 +255,7 @@ export default function Premios() {
 
       handleCancel();
       loadPremios();
+      loadPremiosSorteados();
     } catch (error: any) {
       toast({
         title: 'Erro ao salvar prêmio',
@@ -297,6 +289,7 @@ export default function Premios() {
       // Reordenar prêmios após exclusão
       await reorderPremios();
       loadPremios();
+      loadPremiosSorteados();
     } catch (error: any) {
       toast({
         title: 'Erro ao excluir prêmio',
@@ -370,6 +363,7 @@ export default function Premios() {
         variant: 'destructive',
       });
       loadPremios(); // Recarregar em caso de erro
+      loadPremiosSorteados();
     }
   };
 
@@ -402,6 +396,7 @@ export default function Premios() {
         variant: 'destructive',
       });
       loadPremios();
+      loadPremiosSorteados();
     }
   };
 
@@ -434,6 +429,7 @@ export default function Premios() {
         variant: 'destructive',
       });
       loadPremios();
+      loadPremiosSorteados();
     }
   };
 
@@ -582,6 +578,7 @@ export default function Premios() {
       setImportPreview([]);
       setTemCabecalho(true);
       loadPremios();
+      loadPremiosSorteados();
     } catch (error: any) {
       toast({
         title: 'Erro ao importar',
@@ -836,7 +833,7 @@ export default function Premios() {
             Prêmios ({premios.length})
           </TabsTrigger>
           <TabsTrigger value="sorteados">
-            Sorteados ({sorteados.length})
+            Sorteados ({premiosSorteados.length})
           </TabsTrigger>
         </TabsList>
 
@@ -902,7 +899,7 @@ export default function Premios() {
                 Prêmios Sorteados
               </CardTitle>
               <CardDescription>
-                Lista de todos os prêmios já sorteados
+                Lista de todos os prêmios já sorteados. As informações sobre os ganhadores estão no histórico.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -910,7 +907,7 @@ export default function Premios() {
                 <div className="text-center py-8 text-muted-foreground">
                   Carregando...
                 </div>
-              ) : sorteados.length === 0 ? (
+              ) : premiosSorteados.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Nenhum prêmio sorteado ainda
                 </div>
@@ -918,32 +915,34 @@ export default function Premios() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Cidade</TableHead>
-                      <TableHead>Setor</TableHead>
-                      <TableHead>Data do Sorteio</TableHead>
+                      <TableHead className="w-20">Ordem</TableHead>
+                      <TableHead>Nome do Prêmio</TableHead>
+                      <TableHead>Descrição</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Data de Atualização</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sorteados.map((sorteado) => (
-                      <TableRow key={sorteado.id}>
-                        <TableCell className="font-medium">{sorteado.nome}</TableCell>
-                        <TableCell>{sorteado.cidade}</TableCell>
-                        <TableCell>{sorteado.setor}</TableCell>
+                    {premiosSorteados.map((premio) => (
+                      <TableRow key={premio.id}>
+                        <TableCell className="font-medium">{premio.ordem}</TableCell>
+                        <TableCell className="font-medium">{premio.nome}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {premio.descricao || '-'}
+                        </TableCell>
                         <TableCell>
-                          {new Date(sorteado.sorteado_em).toLocaleString('pt-BR', {
+                          <Badge variant="default">
+                            {premio.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(premio.updated_at).toLocaleString('pt-BR', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
                           })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={sorteado.confirmado ? 'default' : 'secondary'}>
-                            {sorteado.confirmado ? 'Confirmado' : 'Pendente'}
-                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}
