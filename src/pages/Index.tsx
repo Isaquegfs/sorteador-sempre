@@ -24,12 +24,15 @@ const Index = () => {
   }, []);
 
   const checkFormStatus = async () => {
-    const { data } = await supabase
-      .from('formulario_status')
-      .select('aberto')
-      .single();
+    const { data, error } = await supabase.rpc('is_form_open');
     
-    setIsFormOpen(data?.aberto || false);
+    if (error) {
+      console.error('Erro ao verificar status do formulário:', error);
+      setIsFormOpen(false);
+      return;
+    }
+    
+    setIsFormOpen(data || false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
