@@ -956,9 +956,6 @@ const Sorteio = () => {
                   {sequenciaAtual} / {sequenciaTotal}
                 </div>
               </div>
-              <p className={cn("text-lg font-semibold mb-1", contrastClasses.textPrimary)}>
-                Sorteio {sequenciaAtual} de {sequenciaTotal}
-              </p>
               {proximoPremio && (
                 <>
                   <p className={cn("text-sm mb-2", contrastClasses.textMuted)}>
