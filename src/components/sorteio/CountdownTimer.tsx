@@ -51,7 +51,7 @@ export const CountdownTimer = ({ duration, onConfirm, onReject, winnerName }: Co
   };
 
   return (
-    <div className="fixed top-4 left-4 z-50 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 animate-fade-in">
+    <div className="absolute top-4 right-4 z-50 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 animate-fade-in">
       <div className="space-y-3">
         <div className="flex items-center gap-3">
           <Clock className={cn("h-5 w-5 animate-pulse", getColorClass())} />
