@@ -834,7 +834,7 @@ const Sorteio = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+    <div className="h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Fundo temático com overlay */}
       <div 
         className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
@@ -951,13 +951,13 @@ const Sorteio = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="w-full max-w-4xl space-y-8">
+      <div className="w-full max-w-4xl space-y-4">
         {/* Logo com animação */}
         <LogoAnimation isAnimating={isAnimating} />
 
         {/* Título */}
         <h1 
-          className="text-6xl font-bold text-center"
+          className="text-4xl md:text-5xl font-bold text-center"
           style={
             titleStyle === 'cor'
               ? { color: titleColor }
@@ -988,7 +988,7 @@ const Sorteio = () => {
           <div className="relative">
             <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
             <div className={cn(
-              "text-center mb-8 p-6 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
+              "text-center mb-4 p-4 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
               contrastClasses.cardBg,
               contrastClasses.cardBorder
             )}>
@@ -1012,7 +1012,7 @@ const Sorteio = () => {
           <div className="relative">
             <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
             <div className={cn(
-              "text-center mb-8 p-6 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
+              "text-center mb-4 p-4 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
               contrastClasses.cardBg,
               contrastClasses.cardBorder
             )}>
@@ -1045,7 +1045,7 @@ const Sorteio = () => {
           <div className="relative">
             <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
             <div className={cn(
-              "text-center mb-8 p-6 rounded-lg border-2 space-y-4 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
+              "text-center mb-4 p-4 rounded-lg border-2 space-y-4 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
               contrastClasses.cardBg,
               contrastClasses.cardBorder
             )}>
@@ -1093,7 +1093,7 @@ const Sorteio = () => {
 
         {/* Resultados do sorteio */}
         {showWinners && winners.length > 0 && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="text-center">
               {emSequencia || sequenciaVencedores.length > 0 ? (
                 <>
@@ -1140,7 +1140,7 @@ const Sorteio = () => {
               )}
             </div>
             
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-center gap-4">
               {winners.map((winner, index) => (
                 <WinnerCard
                   key={index}
@@ -1175,8 +1175,8 @@ const Sorteio = () => {
 
         {/* Formulário de sorteio */}
         {!showWinners && !isSorteando && !emSequencia && !aguardandoProximo && (
-          <div className="max-w-md mx-auto space-y-6">
-            <div className="space-y-4 bg-card p-8 rounded-lg border shadow-lg">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="space-y-4 bg-card p-6 rounded-lg border shadow-lg">
               <div className="text-center mb-4">
                 <p className="text-lg text-muted-foreground">
                   {participantes.length} participante(s) disponível(is)
@@ -1184,7 +1184,7 @@ const Sorteio = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="num-vencedores" className="text-lg">
+                <Label htmlFor="num-vencedores" className="text-base">
                   Quantos nomes deseja sortear?
                 </Label>
                 <Input
@@ -1194,7 +1194,7 @@ const Sorteio = () => {
                   max={participantes.length}
                   value={numVencedores}
                   onChange={(e) => setNumVencedores(parseInt(e.target.value) || 1)}
-                  className="text-center text-xl h-14"
+                  className="text-center text-lg h-12"
                   disabled={isSorteando}
                 />
               </div>
