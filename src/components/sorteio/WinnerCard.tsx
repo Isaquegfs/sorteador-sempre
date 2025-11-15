@@ -14,10 +14,11 @@ interface WinnerCardProps {
   };
   delay: number;
   onFlip?: () => void;
+  autoReveal?: boolean;
 }
 
-export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip }: WinnerCardProps) => {
-  const [isRevealed, setIsRevealed] = useState(false);
+export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoReveal = false }: WinnerCardProps) => {
+  const [isRevealed, setIsRevealed] = useState(autoReveal);
 
   const handleFlip = () => {
     if (!isRevealed) {

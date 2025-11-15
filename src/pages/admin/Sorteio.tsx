@@ -1123,6 +1123,7 @@ const Sorteio = () => {
                   cidade={winner.cidade}
                   premio={winner.premio}
                   delay={index * 200}
+                  autoReveal={!emSequencia && sequenciaVencedores.length > 0}
                   onFlip={() => {
                     if (!showCountdown && !currentWinnerId) {
                       setCurrentWinnerId(winner.id);
