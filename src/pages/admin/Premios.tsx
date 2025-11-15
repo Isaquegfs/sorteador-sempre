@@ -167,9 +167,26 @@ export default function Premios() {
   };
 
   const getNextOrdem = async (): Promise<number> => {
-    if (premios.length === 0) return 1;
-    const maxOrdem = Math.max(...premios.map(p => p.ordem));
-    return maxOrdem + 1;
+    try {
+      // Buscar o valor máximo de ordem diretamente do banco, considerando TODOS os status
+      const { data, error } = await supabase
+        .from('premios')
+        .select('ordem')
+        .order('ordem', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        // Se não houver prêmios, começar do 1
+        if (error.code === 'PGRST116') return 1;
+        throw error;
+      }
+
+      return (data?.ordem || 0) + 1;
+    } catch (error) {
+      console.error('Erro ao obter próxima ordem:', error);
+      return 1;
+    }
   };
 
   const validateForm = (): boolean => {
