@@ -1008,7 +1008,7 @@ const Sorteio = () => {
         )}
 
         {/* Indicador de progresso da sequência */}
-        {emSequencia && (
+        {emSequencia && !(aguardandoProximo && sequenciaAtual >= sequenciaTotal) && (
           <div className="relative">
             <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
             <div className={cn(
