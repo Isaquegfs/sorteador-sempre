@@ -963,7 +963,11 @@ const Sorteio = () => {
                   <p className={cn("text-sm mb-2", contrastClasses.textMuted)}>
                     Prêmio atual:
                   </p>
-                  <p className={cn("text-xl font-bold", contrastClasses.textSecondary)}>
+                  <p className={cn(
+                    "font-bold",
+                    aguardandoProximo ? "text-4xl" : "text-xl",
+                    contrastClasses.textSecondary
+                  )}>
                     {proximoPremio.nome}
                   </p>
                 </>
