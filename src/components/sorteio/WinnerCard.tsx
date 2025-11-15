@@ -19,6 +19,9 @@ interface WinnerCardProps {
 
 export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoReveal = false }: WinnerCardProps) => {
   const [isRevealed, setIsRevealed] = useState(autoReveal);
+  
+  // Detectar se é um prêmio sem vencedor
+  const isSemVencedor = !nome && !setor && !cidade && premio;
 
   const handleFlip = () => {
     if (!isRevealed) {
@@ -63,41 +66,78 @@ export const WinnerCard = ({ nome, setor, cidade, premio, delay, onFlip, autoRev
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 blur-2xl" />
               <div className="relative space-y-3">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Sparkles className="h-6 w-6 text-secondary animate-pulse" />
-                  <h3 className="text-2xl font-bold text-center bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    VENCEDOR!
-                  </h3>
-                  <Sparkles className="h-6 w-6 text-secondary animate-pulse" />
-                </div>
-                
-                <div className="text-center space-y-2">
-                  <p className="text-3xl font-bold text-foreground">
-                    {nome}
-                  </p>
-                  <div className="space-y-1">
-                    <p className="text-lg text-muted-foreground">
-                      <span className="font-semibold">Setor:</span> {setor}
-                    </p>
-                    <p className="text-lg text-muted-foreground">
-                      <span className="font-semibold">Cidade:</span> {cidade}
-                    </p>
-                  </div>
-                </div>
-
-                {premio && (
+                {isSemVencedor ? (
+                  // Layout para prêmio sem vencedor
                   <>
-                    <Separator className="my-4" />
-                    <div className="text-center space-y-2 bg-primary/5 p-4 rounded-lg">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Gift className="h-5 w-5 text-primary" />
-                        <p className="text-sm text-muted-foreground font-medium">Prêmio</p>
-                      </div>
-                      <p className="text-xl font-bold text-primary">{premio.nome}</p>
-                      {premio.descricao && (
-                        <p className="text-sm text-muted-foreground">{premio.descricao}</p>
-                      )}
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Gift className="h-8 w-8 text-destructive animate-pulse" />
                     </div>
+                    
+                    <div className="text-center space-y-3">
+                      <h3 className="text-2xl font-bold text-destructive">
+                        SEM VENCEDOR
+                      </h3>
+                      <p className="text-lg text-muted-foreground">
+                        Sorteado não compareceu
+                      </p>
+                    </div>
+
+                    {premio && (
+                      <>
+                        <Separator className="my-4" />
+                        <div className="text-center space-y-2 bg-destructive/5 p-4 rounded-lg border border-destructive/20">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <Gift className="h-5 w-5 text-destructive" />
+                            <p className="text-sm text-muted-foreground font-medium">Prêmio Reprogramado</p>
+                          </div>
+                          <p className="text-xl font-bold text-destructive">{premio.nome}</p>
+                          {premio.descricao && (
+                            <p className="text-sm text-muted-foreground">{premio.descricao}</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  // Layout normal para vencedor
+                  <>
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Sparkles className="h-6 w-6 text-secondary animate-pulse" />
+                      <h3 className="text-2xl font-bold text-center bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        VENCEDOR!
+                      </h3>
+                      <Sparkles className="h-6 w-6 text-secondary animate-pulse" />
+                    </div>
+                    
+                    <div className="text-center space-y-2">
+                      <p className="text-3xl font-bold text-foreground">
+                        {nome}
+                      </p>
+                      <div className="space-y-1">
+                        <p className="text-lg text-muted-foreground">
+                          <span className="font-semibold">Setor:</span> {setor}
+                        </p>
+                        <p className="text-lg text-muted-foreground">
+                          <span className="font-semibold">Cidade:</span> {cidade}
+                        </p>
+                      </div>
+                    </div>
+
+                    {premio && (
+                      <>
+                        <Separator className="my-4" />
+                        <div className="text-center space-y-2 bg-primary/5 p-4 rounded-lg">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <Gift className="h-5 w-5 text-primary" />
+                            <p className="text-sm text-muted-foreground font-medium">Prêmio</p>
+                          </div>
+                          <p className="text-xl font-bold text-primary">{premio.nome}</p>
+                          {premio.descricao && (
+                            <p className="text-sm text-muted-foreground">{premio.descricao}</p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
