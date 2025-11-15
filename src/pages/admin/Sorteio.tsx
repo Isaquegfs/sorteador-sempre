@@ -751,7 +751,7 @@ const Sorteio = () => {
       setShowCountdown(false);
       setCurrentWinnerId(null);
 
-      // Se estiver em sequência, adicionar item especial aos vencedores
+      // Se estiver em sequência, substituir o último vencedor pelo item "sem vencedor"
       if (emSequencia && sorteado.premio_id) {
         // Buscar dados do prêmio
         const { data: premio } = await supabase
@@ -772,7 +772,8 @@ const Sorteio = () => {
               descricao: premio.descricao
             }
           };
-          setSequenciaVencedores(prev => [...prev, itemSemVencedor]);
+          // Substituir o último item (vencedor não confirmado) pelo item "sem vencedor"
+          setSequenciaVencedores(prev => [...prev.slice(0, -1), itemSemVencedor]);
         }
       }
 
