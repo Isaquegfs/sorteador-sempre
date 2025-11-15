@@ -834,7 +834,7 @@ const Sorteio = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-3rem)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="h-[calc(100vh-4.5rem)] flex flex-col items-center justify-center relative overflow-hidden -m-6 p-4">
       {/* Fundo temático com overlay */}
       <div 
         className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
