@@ -147,6 +147,45 @@ const Sorteio = () => {
     }
   }, [sorteioComPremios]);
 
+  // Recarregar prêmios quando a página receber foco
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && sorteioComPremios) {
+        loadPremiosDisponiveis();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [sorteioComPremios]);
+
+  // Escutar mudanças na tabela de prêmios em tempo real
+  useEffect(() => {
+    if (!sorteioComPremios) return;
+
+    const channel = supabase
+      .channel('premios-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'premios',
+        },
+        () => {
+          loadPremiosDisponiveis();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sorteioComPremios]);
+
   const loadActiveTema = async () => {
     try {
       const { data } = await supabase
