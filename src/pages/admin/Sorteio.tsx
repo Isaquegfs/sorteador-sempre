@@ -1049,7 +1049,7 @@ const Sorteio = () => {
                       textShadow: '1px 1px 3px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8)'
                     }}
                   >
-                    {winners.length} de {sequenciaTotal} sorteio(s) realizado(s)
+                    {sequenciaVencedores.length} de {sequenciaTotal} sorteio(s) realizado(s)
                   </p>
                 </>
               ) : (
