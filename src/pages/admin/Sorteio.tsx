@@ -751,6 +751,31 @@ const Sorteio = () => {
       setShowCountdown(false);
       setCurrentWinnerId(null);
 
+      // Se estiver em sequência, adicionar item especial aos vencedores
+      if (emSequencia && sorteado.premio_id) {
+        // Buscar dados do prêmio
+        const { data: premio } = await supabase
+          .from('premios')
+          .select('id, nome, descricao')
+          .eq('id', sorteado.premio_id)
+          .single();
+
+        if (premio) {
+          const itemSemVencedor: Winner = {
+            id: 'sem-vencedor-' + Date.now(),
+            nome: '',
+            setor: '',
+            cidade: '',
+            premio: {
+              id: premio.id,
+              nome: premio.nome,
+              descricao: premio.descricao
+            }
+          };
+          setSequenciaVencedores(prev => [...prev, itemSemVencedor]);
+        }
+      }
+
       // Se estiver em sequência, aguardar próximo sorteio
       if (emSequencia) {
         setAguardandoProximo(true);
