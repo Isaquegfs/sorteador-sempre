@@ -491,6 +491,10 @@ const Sorteio = () => {
       return;
     }
 
+    // Esconde imediatamente a caixa de controles para evitar flicker
+    setAguardandoProximo(false);
+    setShowWinners(false);
+
     setSequenciaAtual(prev => prev + 1);
     
     // Recarregar prêmios disponíveis antes do próximo sorteio
