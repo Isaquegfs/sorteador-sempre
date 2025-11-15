@@ -12,17 +12,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verificar autenticação via secret token para cron jobs
+    // Verificar autenticação via secret token para cron jobs OU Authorization com ANON/SERVICE
     const cronSecret = req.headers.get('x-cron-secret');
     const expectedSecret = Deno.env.get('CRON_SECRET');
-    
-    if (!cronSecret || cronSecret !== expectedSecret) {
-      console.error('Tentativa de acesso não autorizado - secret inválido ou ausente');
+    const authHeader = req.headers.get('authorization') || '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    const authorized =
+      (cronSecret && expectedSecret && cronSecret === expectedSecret) ||
+      authHeader === `Bearer ${anonKey}` ||
+      authHeader === `Bearer ${serviceKey}`;
+
+    if (!authorized) {
+      console.error('Tentativa de acesso não autorizado - credenciais inválidas ou ausentes');
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }), 
-        { 
+        JSON.stringify({ error: 'Unauthorized' }),
+        {
           status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
