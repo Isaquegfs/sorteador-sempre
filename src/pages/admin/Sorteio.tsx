@@ -951,11 +951,13 @@ const Sorteio = () => {
               contrastClasses.cardBg,
               contrastClasses.cardBorder
             )}>
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <div className={cn("text-4xl font-bold", contrastClasses.numberColor)}>
-                  {sequenciaAtual} / {sequenciaTotal}
+              {!aguardandoProximo && (
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <div className={cn("text-4xl font-bold", contrastClasses.numberColor)}>
+                    {sequenciaAtual} / {sequenciaTotal}
+                  </div>
                 </div>
-              </div>
+              )}
               {proximoPremio && (
                 <>
                   <p className={cn("text-sm mb-2", contrastClasses.textMuted)}>
