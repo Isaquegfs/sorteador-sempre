@@ -294,10 +294,10 @@ const Configuracoes = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4">
       <div>
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl font-bold">Configurações</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Gerencie as configurações do sistema de sorteio
         </p>
       </div>
@@ -308,15 +308,15 @@ const Configuracoes = () => {
           <TabsTrigger value="dados">Gerenciar Dados</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="geral" className="space-y-6">
+        <TabsContent value="geral" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Formulário de Inscrição</CardTitle>
-              <CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Formulário de Inscrição</CardTitle>
+              <CardDescription className="text-sm">
                 Controle se o formulário público está aberto para novas inscrições
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="formulario-aberto">Status do Formulário</Label>
@@ -403,15 +403,15 @@ const Configuracoes = () => {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
                 Configurações do Sorteio
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configure o comportamento do sorteador
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="tempoConfirmacao">Tempo de Confirmação (segundos)</Label>
                 <Input
@@ -457,8 +457,8 @@ const Configuracoes = () => {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving}>
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSave} disabled={isSaving} size="sm">
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -471,40 +471,40 @@ const Configuracoes = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="dados" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciar Dados</CardTitle>
-              <CardDescription>
-                Ações perigosas que afetam os dados do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                  <h3 className="font-semibold text-destructive mb-2">Limpar Tabela de Participantes</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Esta ação irá remover todos os participantes cadastrados no sorteio atual.
-                    Os dados da base oficial não serão afetados.
-                  </p>
-                  
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" disabled={isClearing}>
-                        {isClearing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Limpando...
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Limpar Tabela
-                          </>
-                        )}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
+        <TabsContent value="dados" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="border-destructive/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base text-destructive flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Limpar Participantes
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Remove todos os participantes do sorteio atual
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Remove todos os cadastros da tabela de participantes. A base oficial não é afetada.
+                </p>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={isClearing} className="w-full">
+                      {isClearing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Limpando...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Limpar
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -518,24 +518,34 @@ const Configuracoes = () => {
                           Sim, limpar tabela
                         </AlertDialogAction>
                       </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardContent>
+            </Card>
 
-                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                  <h3 className="font-semibold text-destructive mb-2">Limpar Base Oficial</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    ⚠️ Esta ação irá remover <strong>TODOS</strong> os registros da Base Oficial permanentemente.
-                    Esta ação não pode ser desfeita e afetará a validação de participantes.
-                  </p>
-                  
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="destructive" 
-                        disabled={isClearingBase}
-                        className="bg-destructive/80 hover:bg-destructive border border-destructive"
-                      >
+            <Card className="border-destructive/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base text-destructive flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Limpar Base Oficial
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Remove TODOS os registros da Base Oficial
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground mb-3">
+                  ⚠️ Remove <strong>TODOS</strong> os registros da base de referência permanentemente. Use com extremo cuidado!
+                </p>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      disabled={isClearingBase}
+                      className="w-full bg-destructive/80 hover:bg-destructive border border-destructive"
+                    >
                         {isClearingBase ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -568,12 +578,11 @@ const Configuracoes = () => {
                           Confirmar Limpeza
                         </AlertDialogAction>
                       </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
