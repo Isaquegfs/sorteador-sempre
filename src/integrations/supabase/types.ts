@@ -83,6 +83,36 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_acoes: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: string | null
+          id: string
+          is_test: boolean
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: string | null
+          id?: string
+          is_test?: boolean
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: string | null
+          id?: string
+          is_test?: boolean
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
       participantes: {
         Row: {
           cidade: string

@@ -2,12 +2,21 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTestMode } from '@/contexts/TestModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +29,20 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Trash2, Clock, Calendar as CalendarIcon, PlayCircle, FlaskConical } from 'lucide-react';
-import { parse } from 'date-fns';
+import { Loader2, Trash2, Clock, Calendar as CalendarIcon, PlayCircle, FlaskConical, History } from 'lucide-react';
+import { parse, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 const TIMEZONE = 'America/Sao_Paulo';
+
+interface HistoricoAcao {
+  id: string;
+  usuario_nome: string;
+  acao: string;
+  detalhes: string | null;
+  created_at: string;
+}
 
 const Configuracoes = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +61,10 @@ const Configuracoes = () => {
   const [sistemaConfigId, setSistemaConfigId] = useState<string | null>(null);
   const [currentTimeBr, setCurrentTimeBr] = useState('');
   const [checkNowResult, setCheckNowResult] = useState<any>(null);
+  const [historico, setHistorico] = useState<HistoricoAcao[]>([]);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const { isTestMode, isLoading: testModeLoading, activateTestMode, deactivateTestMode } = useTestMode();
 
   useEffect(() => {
@@ -65,6 +85,50 @@ const Configuracoes = () => {
       clearInterval(scheduleInterval);
     };
   }, []);
+
+  // Função helper para registrar ações no histórico
+  const registrarAcao = async (acao: string, detalhes?: string) => {
+    if (!user) return;
+    
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nome')
+        .eq('id', user.id)
+        .single();
+
+      await supabase
+        .from('historico_acoes')
+        .insert({
+          usuario_id: user.id,
+          usuario_nome: profileData?.nome || 'Usuário',
+          acao,
+          detalhes,
+          is_test: isTestMode
+        });
+    } catch (error) {
+      console.error('Erro ao registrar ação:', error);
+    }
+  };
+
+  const loadHistorico = async () => {
+    setLoadingHistorico(true);
+    try {
+      const { data, error } = await supabase
+        .from('historico_acoes')
+        .select('*')
+        .eq('is_test', isTestMode)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setHistorico(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+    } finally {
+      setLoadingHistorico(false);
+    }
+  };
 
   const loadConfig = async () => {
     try {
@@ -317,6 +381,12 @@ const Configuracoes = () => {
 
       if (error) throw error;
 
+      // Registrar ação no histórico
+      await registrarAcao(
+        'Limpeza de participantes',
+        `${totalParticipantes} participante(s) removido(s)`
+      );
+
       toast({
         title: 'Tabela limpa com sucesso!',
         description: 'Todos os cadastros de participantes foram removidos.',
@@ -336,12 +406,24 @@ const Configuracoes = () => {
     setIsClearingBase(true);
     
     try {
+      // Contar registros antes de limpar
+      const { count } = await supabase
+        .from('base_oficial')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_test', isTestMode);
+
       const { error } = await supabase
         .from('base_oficial')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        .eq('is_test', isTestMode);
 
       if (error) throw error;
+
+      // Registrar ação no histórico
+      await registrarAcao(
+        'Limpeza da Base Oficial',
+        `${count || 0} registro(s) removido(s)`
+      );
 
       toast({
         title: 'Base Oficial limpa com sucesso!',
@@ -426,9 +508,10 @@ const Configuracoes = () => {
       </div>
 
       <Tabs defaultValue="geral" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="geral">Configurações Gerais</TabsTrigger>
           <TabsTrigger value="dados">Gerenciar Dados</TabsTrigger>
+          <TabsTrigger value="historico" onClick={loadHistorico}>Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="space-y-4">
@@ -653,11 +736,13 @@ const Configuracoes = () => {
                   </div>
                   <Switch
                     checked={isTestMode}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={async (checked) => {
                       if (checked) {
-                        activateTestMode();
+                        await activateTestMode();
+                        await registrarAcao('Modo de Testes ativado', 'Sistema operando em ambiente de simulação');
                       } else {
-                        deactivateTestMode();
+                        await deactivateTestMode();
+                        await registrarAcao('Modo de Testes desativado', 'Sistema retornou aos dados reais');
                       }
                     }}
                     disabled={testModeLoading}
@@ -802,6 +887,63 @@ const Configuracoes = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="historico" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de Ações
+              </CardTitle>
+              <CardDescription>
+                Últimas 50 ações administrativas realizadas no sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingHistorico ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : historico.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhuma ação registrada ainda</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data/Hora</TableHead>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Ação</TableHead>
+                        <TableHead>Detalhes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {historico.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="text-xs">
+                            {format(new Date(item.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="font-medium text-sm">
+                            {item.usuario_nome}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {item.acao}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {item.detalhes || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
