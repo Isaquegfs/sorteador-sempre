@@ -64,6 +64,26 @@ const Index = () => {
     setIsLoading(true);
     
     try {
+      // Check rate limit before proceeding
+      const { data: rateLimitCheck, error: rateLimitError } = await supabase.functions.invoke('check-rate-limit', {
+        body: { ip: 'client' } // Backend will extract actual IP
+      });
+
+      if (rateLimitError || !rateLimitCheck?.allowed) {
+        toast({
+          title: "Limite excedido",
+          description: rateLimitCheck?.message || "Você atingiu o limite de cadastros. Por favor, tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Rate limit check failed:', error);
+      // Continue with registration if rate limit check fails (graceful degradation)
+    }
+    
+    try {
       const cpfHash = await hashCPF(formData.cpf);
       const cpfCensurado = censorCPF(formData.cpf);
 
@@ -133,7 +153,7 @@ const Index = () => {
 
       const { setor, cidade } = dadosBase[0];
 
-      // Inserir participante
+      // Inserir participante with IP tracking
       const { error } = await supabase
         .from('participantes')
         .insert({
@@ -144,6 +164,7 @@ const Index = () => {
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
           is_test: isTestMode,
+          ip: 'client', // Backend will capture actual IP via trigger or function
         });
 
       if (error) throw error;
