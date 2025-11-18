@@ -22,14 +22,12 @@ Deno.serve(async (req) => {
       }
     )
 
-    const { ip } = await req.json()
+    // Extract client IP from request headers
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown'
 
-    if (!ip) {
-      return new Response(
-        JSON.stringify({ error: 'IP address is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log('Checking rate limit for IP:', clientIP)
 
     // Check submissions from this IP in the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
@@ -37,7 +35,7 @@ Deno.serve(async (req) => {
     const { data: recentSubmissions, error } = await supabaseClient
       .from('participantes')
       .select('id, created_at')
-      .eq('ip', ip)
+      .eq('ip', clientIP)
       .gte('created_at', oneHourAgo)
 
     if (error) {
@@ -67,7 +65,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         allowed: true,
         count: submissionCount,
-        limit: maxSubmissionsPerHour 
+        limit: maxSubmissionsPerHour,
+        ip: clientIP // Return IP for debugging
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
