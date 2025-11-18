@@ -8,9 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCPF, censorCPF, hashCPF, validateCPF } from "@/lib/cpf";
 import { participanteSchema } from "@/lib/validation";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
+import { useTestModeQuery } from "@/hooks/useTestModeQuery";
 
 const Index = () => {
   const { toast } = useToast();
+  const { isTestMode } = useTestModeQuery();
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -141,6 +143,7 @@ const Index = () => {
           cidade,
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
+          is_test: isTestMode,
         });
 
       if (error) throw error;
