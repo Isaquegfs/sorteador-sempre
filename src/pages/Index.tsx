@@ -63,10 +63,12 @@ const Index = () => {
 
     setIsLoading(true);
     
+    let clientIP = 'unknown';
+    
     try {
-      // Check rate limit before proceeding
+      // Check rate limit before proceeding (edge function extracts IP automatically)
       const { data: rateLimitCheck, error: rateLimitError } = await supabase.functions.invoke('check-rate-limit', {
-        body: { ip: 'client' } // Backend will extract actual IP
+        body: {} // Edge function extracts IP from request headers
       });
 
       if (rateLimitError || !rateLimitCheck?.allowed) {
@@ -77,6 +79,11 @@ const Index = () => {
         });
         setIsLoading(false);
         return;
+      }
+      
+      // Use the IP returned from the rate limit check
+      if (rateLimitCheck?.ip) {
+        clientIP = rateLimitCheck.ip;
       }
     } catch (error) {
       console.error('Rate limit check failed:', error);
@@ -153,7 +160,7 @@ const Index = () => {
 
       const { setor, cidade } = dadosBase[0];
 
-      // Inserir participante with IP tracking
+      // Inserir participante with IP from rate limit check
       const { error } = await supabase
         .from('participantes')
         .insert({
@@ -164,7 +171,7 @@ const Index = () => {
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
           is_test: isTestMode,
-          ip: 'client', // Backend will capture actual IP via trigger or function
+          ip: clientIP,
         });
 
       if (error) throw error;

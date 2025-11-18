@@ -2,3 +2,6 @@ project_id = "qfppuqzodqclonpkmhgk"
 
 [functions.check-form-schedule]
 verify_jwt = false
+
+[functions.check-rate-limit]
+verify_jwt = false
