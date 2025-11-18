@@ -217,10 +217,10 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {sorteiosData.length > 0 && (
+      <h2 className="text-2xl font-bold mt-8">Análise de Sorteios</h2>
+      
+      {sorteiosData.length > 0 ? (
         <>
-          <h2 className="text-2xl font-bold mt-8">Análise de Sorteios</h2>
-          
           <div className="grid gap-6 md:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -342,6 +342,18 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </>
+      ) : (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum sorteio registrado ainda</h3>
+              <p className="text-sm text-muted-foreground">
+                Os dados de análise aparecerão automaticamente após limpar a lista de participantes pela primeira vez em Configurações.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
