@@ -159,13 +159,13 @@ const Participantes = () => {
                 <SelectTrigger className="w-[120px]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="20">20 por página</SelectItem>
-                  <SelectItem value="30">30 por página</SelectItem>
-                  <SelectItem value="50">50 por página</SelectItem>
-                  <SelectItem value="100">100 por página</SelectItem>
-                  <SelectItem value="all">Todos</SelectItem>
-                </SelectContent>
+              <SelectContent>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
               </Select>
             </div>
           </div>
