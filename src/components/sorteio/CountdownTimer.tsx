@@ -8,16 +8,34 @@ interface CountdownTimerProps {
   onConfirm: () => void;
   onReject: () => void;
   winnerName: string;
+  startTimestamp?: number | null; // timestamp em ms de quando começou
 }
 
-export const CountdownTimer = ({ duration, onConfirm, onReject, winnerName }: CountdownTimerProps) => {
-  const [timeLeft, setTimeLeft] = useState(duration);
-  const [isExpired, setIsExpired] = useState(false);
+export const CountdownTimer = ({ 
+  duration, 
+  onConfirm, 
+  onReject, 
+  winnerName,
+  startTimestamp 
+}: CountdownTimerProps) => {
+  // Calcular tempo inicial baseado no timestamp
+  const calculateInitialTime = () => {
+    if (startTimestamp) {
+      const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+      const remaining = duration - elapsed;
+      return remaining > 0 ? remaining : 0;
+    }
+    return duration;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateInitialTime());
+  const [isExpired, setIsExpired] = useState(calculateInitialTime() <= 0);
 
   useEffect(() => {
-    setTimeLeft(duration);
-    setIsExpired(false);
-  }, [duration, winnerName]);
+    const newTime = calculateInitialTime();
+    setTimeLeft(newTime);
+    setIsExpired(newTime <= 0);
+  }, [duration, winnerName, startTimestamp]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
