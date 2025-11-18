@@ -273,6 +273,33 @@ export type Database = {
           },
         ]
       }
+      sorteios_realizados: {
+        Row: {
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          is_test: boolean
+          total_participantes: number
+        }
+        Insert: {
+          created_at?: string
+          data_fim?: string
+          data_inicio: string
+          id?: string
+          is_test?: boolean
+          total_participantes: number
+        }
+        Update: {
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          is_test?: boolean
+          total_participantes?: number
+        }
+        Relationships: []
+      }
       temas: {
         Row: {
           ativo: boolean | null
