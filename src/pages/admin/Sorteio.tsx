@@ -155,6 +155,54 @@ const Sorteio = () => {
       localStorage.removeItem(SORTEIO_STATE_KEY);
     } catch {}
   };
+  
+  // Recuperar eventual sorteio pendente diretamente do backend (fallback mais robusto)
+  const loadPendingSorteioFromDb = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sorteados')
+        .select('participante_id, nome, setor, cidade, premio_id, is_test')
+        .is('confirmado', null)
+        .eq('is_test', isTestMode)
+        .order('sorteado_em', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error || !data || !data.participante_id) return;
+
+      let premioDetalhes: Premio | undefined;
+      if (data.premio_id) {
+        const { data: premio } = await supabase
+          .from('premios')
+          .select('id, nome, descricao')
+          .eq('id', data.premio_id)
+          .single();
+
+        if (premio) {
+          premioDetalhes = {
+            id: premio.id,
+            nome: premio.nome,
+            descricao: premio.descricao,
+            ordem: 0,
+          };
+        }
+      }
+
+      const pendingWinner: Winner = {
+        id: data.participante_id,
+        nome: data.nome,
+        setor: data.setor,
+        cidade: data.cidade,
+        premio: premioDetalhes,
+      };
+
+      setWinners([pendingWinner]);
+      setShowWinners(true);
+      // Countdown e currentWinnerId só serão iniciados quando o cartão for revelado (onFlip)
+    } catch (error) {
+      console.error('Erro ao recuperar sorteio pendente do backend:', error);
+    }
+  };
 
   const { toast } = useToast();
 
@@ -206,6 +254,9 @@ const Sorteio = () => {
         title: 'Estado restaurado',
         description: 'O sorteio em andamento foi retomado.',
       });
+    } else {
+      // Se não houver estado local, tentar recuperar um sorteio pendente no backend
+      loadPendingSorteioFromDb();
     }
   }, []);
 
@@ -397,6 +448,16 @@ const Sorteio = () => {
   };
 
   const realizarSorteio = async () => {
+    // Impedir novo sorteio se já houver um ganhador aguardando confirmação
+    if (currentWinnerId) {
+      toast({
+        title: 'Sorteio em andamento',
+        description: 'Finalize o sorteado atual (Confirmar ou Não confirmado) antes de iniciar um novo sorteio.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (participantes.length === 0) {
       toast({
         title: 'Nenhum participante disponível',
@@ -517,6 +578,12 @@ const Sorteio = () => {
         .insert([sorteadoData]);
 
       if (error) throw error;
+
+      // Marcar o prêmio atual como "Em validação" para que não apareça como disponível em novos sorteios
+      await supabase
+        .from('premios')
+        .update({ status: 'Em validação' })
+        .eq('id', proximoPremio.id);
 
       // Atualizar listas
       const novosExcluidos = new Set(excludedIds);
@@ -655,6 +722,14 @@ const Sorteio = () => {
 
       if (error) throw error;
 
+      // Se estiver em modo com prêmios, marcar o prêmio atual como "Em validação"
+      if (sorteioComPremios && proximoPremio) {
+        await supabase
+          .from('premios')
+          .update({ status: 'Em validação' })
+          .eq('id', proximoPremio.id);
+      }
+
       // Preparar winners com informações do prêmio
       const winnersComPremio = vencedores.map(w => ({
         ...w,
@@ -697,6 +772,16 @@ const Sorteio = () => {
   };
 
   const novoSorteio = () => {
+    // Impedir novo sorteio se ainda houver um ganhador aguardando confirmação
+    if (currentWinnerId) {
+      toast({
+        title: 'Sorteio em andamento',
+        description: 'Finalize o sorteado atual (Confirmar ou Não confirmado) antes de iniciar um novo sorteio.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setShowWinners(false);
     setWinners([]);
     setNumVencedores(1);
@@ -1283,14 +1368,16 @@ const Sorteio = () => {
             </div>
 
             <div className="flex justify-center">
-              <Button
-                onClick={novoSorteio}
-                size="lg"
-                className="gap-2"
-              >
-                <Sparkles className="h-5 w-5" />
-                Novo Sorteio
-              </Button>
+              {!currentWinnerId && (
+                <Button
+                  onClick={novoSorteio}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  Novo Sorteio
+                </Button>
+              )}
             </div>
           </div>
         )}
