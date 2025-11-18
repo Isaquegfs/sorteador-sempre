@@ -348,6 +348,13 @@ export type Database = {
       }
     }
     Functions: {
+      get_dados_base_oficial: {
+        Args: { cpf_hash_input: string }
+        Returns: {
+          cidade: string
+          setor: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

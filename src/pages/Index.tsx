@@ -89,14 +89,6 @@ const Index = () => {
         return;
       }
 
-      // Verificar se já está cadastrado usando function para bypass RLS
-      const { data: participanteExiste, error: participanteError } = await supabase
-        .rpc('is_cpf_elegivel', { cpf_hash_input: cpfHash });
-
-      if (participanteError) {
-        // Silently handle error
-      }
-
       // Verificar duplicata apenas se elegível
       let isJaCadastrado = false;
       try {
@@ -123,14 +115,30 @@ const Index = () => {
         return;
       }
 
+      // Buscar setor e cidade da base oficial
+      const { data: dadosBase, error: dadosError } = await supabase
+        .rpc('get_dados_base_oficial', { cpf_hash_input: cpfHash });
+
+      if (dadosError || !dadosBase || dadosBase.length === 0) {
+        toast({
+          title: "Erro ao buscar dados",
+          description: "Não foi possível obter informações da base oficial.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const { setor, cidade } = dadosBase[0];
+
       // Inserir participante
       const { error } = await supabase
         .from('participantes')
         .insert({
           nome: formData.nome,
           email: formData.email,
-          setor: 'Não informado',
-          cidade: 'Não informado',
+          setor,
+          cidade,
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
         });
