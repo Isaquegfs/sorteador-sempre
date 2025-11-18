@@ -73,6 +73,7 @@ const Sorteio = () => {
   const [showCountdown, setShowCountdown] = useState(false);
   const [currentWinnerId, setCurrentWinnerId] = useState<string | null>(null);
   const [countdownDuration, setCountdownDuration] = useState(40);
+  const [countdownStartTimestamp, setCountdownStartTimestamp] = useState<number | null>(null);
   const [sorteioComPremios, setSorteioComPremios] = useState(false);
   const [ativarContadorTempo, setAtivarContadorTempo] = useState(false);
   const [premiosDisponiveis, setPremiosDisponiveis] = useState<Premio[]>([]);
@@ -98,6 +99,8 @@ const Sorteio = () => {
   const [contrastClasses, setContrastClasses] = useState(getContrastClasses('dark'));
   
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
+  const SORTEIO_STATE_KEY = 'sorteio_state_persistido';
+  
   const persistExcluded = (set: Set<string>) => {
     try {
       localStorage.setItem(EXCLUDED_STORAGE_KEY, JSON.stringify(Array.from(set)));
@@ -113,6 +116,46 @@ const Sorteio = () => {
       return new Set();
     }
   };
+
+  // Persistir estado completo do sorteio
+  const persistSorteioState = (state: {
+    currentWinnerId: string;
+    winners: Winner[];
+    showCountdown: boolean;
+    countdownStartTimestamp: number;
+    countdownDuration: number;
+    emSequencia: boolean;
+    sequenciaTotal: number;
+    sequenciaAtual: number;
+    sequenciaVencedores: Winner[];
+    proximoPremio: Premio | null;
+  }) => {
+    try {
+      localStorage.setItem(SORTEIO_STATE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error('Erro ao persistir estado do sorteio:', error);
+    }
+  };
+
+  // Restaurar estado do sorteio
+  const restoreSorteioState = () => {
+    try {
+      const raw = localStorage.getItem(SORTEIO_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (error) {
+      console.error('Erro ao restaurar estado do sorteio:', error);
+      return null;
+    }
+  };
+
+  // Limpar estado persistido
+  const clearSorteioState = () => {
+    try {
+      localStorage.removeItem(SORTEIO_STATE_KEY);
+    } catch {}
+  };
+
   const { toast } = useToast();
 
   // Helper function para obter os próximos 4 prêmios
@@ -141,6 +184,29 @@ const Sorteio = () => {
     loadActiveTema();
     loadCountdownConfig();
     loadSorteioConfig();
+    
+    // Restaurar estado do sorteio se existir
+    const savedState = restoreSorteioState();
+    if (savedState) {
+      setCurrentWinnerId(savedState.currentWinnerId);
+      setWinners(savedState.winners);
+      setShowWinners(true);
+      setShowCountdown(savedState.showCountdown);
+      setCountdownStartTimestamp(savedState.countdownStartTimestamp);
+      setCountdownDuration(savedState.countdownDuration);
+      setEmSequencia(savedState.emSequencia);
+      setSequenciaTotal(savedState.sequenciaTotal);
+      setSequenciaAtual(savedState.sequenciaAtual);
+      setSequenciaVencedores(savedState.sequenciaVencedores);
+      if (savedState.proximoPremio) {
+        setProximoPremio(savedState.proximoPremio);
+      }
+      
+      toast({
+        title: 'Estado restaurado',
+        description: 'O sorteio em andamento foi retomado.',
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -510,6 +576,8 @@ const Sorteio = () => {
     setAguardandoProximo(false);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    setCountdownStartTimestamp(null);
+    clearSorteioState(); // Limpar estado persistido
     
     toast({
       title: 'Sequência cancelada',
@@ -525,6 +593,8 @@ const Sorteio = () => {
     setAguardandoProximo(false);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    setCountdownStartTimestamp(null);
+    clearSorteioState(); // Limpar estado persistido
     
     if (sequenciaVencedores.length > 0) {
       setWinners(sequenciaVencedores);
@@ -632,6 +702,8 @@ const Sorteio = () => {
     setNumVencedores(1);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    setCountdownStartTimestamp(null);
+    clearSorteioState(); // Limpar estado persistido
     
     // Resetar estados da sequência
     setEmSequencia(false);
@@ -682,6 +754,8 @@ const Sorteio = () => {
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
+      setCountdownStartTimestamp(null);
+      clearSorteioState(); // Limpar estado persistido
 
       // Se estiver em sequência, aguardar próximo sorteio
       if (emSequencia) {
@@ -756,6 +830,8 @@ const Sorteio = () => {
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
+      setCountdownStartTimestamp(null);
+      clearSorteioState(); // Limpar estado persistido
 
       // Se estiver em sequência, substituir o último vencedor pelo item "sem vencedor"
       if (emSequencia && sorteado.premio_id) {
@@ -827,6 +903,10 @@ const Sorteio = () => {
       setWinners([]);
       setNumVencedores(1);
       setExcludedIds(new Set());
+      setShowCountdown(false);
+      setCurrentWinnerId(null);
+      setCountdownStartTimestamp(null);
+      clearSorteioState(); // Limpar estado persistido
       try { localStorage.removeItem(EXCLUDED_STORAGE_KEY); } catch {}
       
       // Recarregar participantes da base oficial
@@ -931,6 +1011,7 @@ const Sorteio = () => {
           onConfirm={handleConfirmWinner}
           onReject={handleRejectWinner}
           winnerName={winners.find(w => w.id === currentWinnerId)?.nome || ''}
+          startTimestamp={countdownStartTimestamp}
         />
       )}
 
@@ -1177,6 +1258,24 @@ const Sorteio = () => {
                     if (!showCountdown && !currentWinnerId) {
                       setCurrentWinnerId(winner.id);
                       setShowCountdown(true);
+                      const startTimestamp = Date.now();
+                      setCountdownStartTimestamp(startTimestamp);
+                      
+                      // Persistir estado do sorteio
+                      if (ativarContadorTempo) {
+                        persistSorteioState({
+                          currentWinnerId: winner.id,
+                          winners,
+                          showCountdown: true,
+                          countdownStartTimestamp: startTimestamp,
+                          countdownDuration,
+                          emSequencia,
+                          sequenciaTotal,
+                          sequenciaAtual,
+                          sequenciaVencedores,
+                          proximoPremio,
+                        });
+                      }
                     }
                   }}
                 />
