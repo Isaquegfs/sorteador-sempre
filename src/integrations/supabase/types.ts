@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_test: boolean
           nome: string
           setor: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          is_test?: boolean
           nome: string
           setor: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_test?: boolean
           nome?: string
           setor?: string
         }
@@ -86,6 +89,7 @@ export type Database = {
           email: string
           id: string
           ip: string | null
+          is_test: boolean
           nome: string
           setor: string
         }
@@ -97,6 +101,7 @@ export type Database = {
           email: string
           id?: string
           ip?: string | null
+          is_test?: boolean
           nome: string
           setor: string
         }
@@ -108,6 +113,7 @@ export type Database = {
           email?: string
           id?: string
           ip?: string | null
+          is_test?: boolean
           nome?: string
           setor?: string
         }
@@ -118,6 +124,7 @@ export type Database = {
           created_at: string
           descricao: string | null
           id: string
+          is_test: boolean
           nome: string
           ordem: number
           status: string
@@ -127,6 +134,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          is_test?: boolean
           nome: string
           ordem: number
           status?: string
@@ -136,6 +144,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          is_test?: boolean
           nome?: string
           ordem?: number
           status?: string
@@ -171,6 +180,7 @@ export type Database = {
           senha_criptografia_hash: string | null
           sorteio_com_premios: boolean | null
           tempo_confirmacao_segundos: number | null
+          test_mode_active: boolean
           total_sorteios_realizados: number
           updated_at: string
         }
@@ -180,6 +190,7 @@ export type Database = {
           senha_criptografia_hash?: string | null
           sorteio_com_premios?: boolean | null
           tempo_confirmacao_segundos?: number | null
+          test_mode_active?: boolean
           total_sorteios_realizados?: number
           updated_at?: string
         }
@@ -189,6 +200,7 @@ export type Database = {
           senha_criptografia_hash?: string | null
           sorteio_com_premios?: boolean | null
           tempo_confirmacao_segundos?: number | null
+          test_mode_active?: boolean
           total_sorteios_realizados?: number
           updated_at?: string
         }
@@ -200,6 +212,7 @@ export type Database = {
           confirmado: boolean | null
           confirmado_em: string | null
           id: string
+          is_test: boolean
           nome: string
           participante_id: string | null
           premio_id: string | null
@@ -212,6 +225,7 @@ export type Database = {
           confirmado?: boolean | null
           confirmado_em?: string | null
           id?: string
+          is_test?: boolean
           nome: string
           participante_id?: string | null
           premio_id?: string | null
@@ -224,6 +238,7 @@ export type Database = {
           confirmado?: boolean | null
           confirmado_em?: string | null
           id?: string
+          is_test?: boolean
           nome?: string
           participante_id?: string | null
           premio_id?: string | null

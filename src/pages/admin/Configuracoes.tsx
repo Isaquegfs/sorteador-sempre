@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTestMode } from '@/contexts/TestModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Trash2, Clock, Calendar as CalendarIcon, PlayCircle } from 'lucide-react';
+import { Loader2, Trash2, Clock, Calendar as CalendarIcon, PlayCircle, FlaskConical } from 'lucide-react';
 import { parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
@@ -44,6 +45,7 @@ const Configuracoes = () => {
   const [currentTimeBr, setCurrentTimeBr] = useState('');
   const [checkNowResult, setCheckNowResult] = useState<any>(null);
   const { toast } = useToast();
+  const { isTestMode, isLoading: testModeLoading, activateTestMode, deactivateTestMode } = useTestMode();
 
   useEffect(() => {
     loadConfig();
@@ -554,6 +556,69 @@ const Configuracoes = () => {
                   checked={ativarContadorTempo}
                   onCheckedChange={setAtivarContadorTempo}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FlaskConical className="h-5 w-5 text-primary" />
+                Modo de Testes
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Simule operações sem afetar os dados reais do sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isTestMode && (
+                <Alert>
+                  <AlertTitle className="text-sm font-semibold">🧪 Modo de Testes Ativo</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Todas as operações estão sendo realizadas em ambiente de simulação. 
+                    Os dados reais não serão afetados.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Quando ativado, o sistema cria uma cópia dos dados atuais e todas as ações 
+                  (sorteios, alterações, etc.) acontecem apenas nessa camada temporária.
+                </p>
+                
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">
+                      Status: {isTestMode ? 'Ativo' : 'Desativado'}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {isTestMode 
+                        ? 'Operando em ambiente de simulação' 
+                        : 'Operando com dados reais'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isTestMode}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        activateTestMode();
+                      } else {
+                        deactivateTestMode();
+                      }
+                    }}
+                    disabled={testModeLoading}
+                  />
+                </div>
+                
+                {isTestMode && (
+                  <Alert variant="destructive" className="text-xs">
+                    <AlertDescription>
+                      Ao desativar o Modo de Testes, todos os dados de simulação serão 
+                      permanentemente descartados e o sistema retornará ao estado anterior.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </CardContent>
           </Card>

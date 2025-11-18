@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTestModeQuery } from '@/hooks/useTestModeQuery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,16 +69,18 @@ const BaseOficial = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [temCabecalho, setTemCabecalho] = useState(true);
   const { toast } = useToast();
+  const { testFilter } = useTestModeQuery();
 
   useEffect(() => {
     loadBaseOficial();
-  }, []);
+  }, [testFilter]);
 
   const loadBaseOficial = async () => {
     try {
       const { data, error } = await supabase
         .from('base_oficial')
         .select('*')
+        .eq('is_test', testFilter)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Database, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTestModeQuery } from '@/hooks/useTestModeQuery';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -12,18 +13,19 @@ const Dashboard = () => {
     premiosSorteados: 0,
     sorteiosRealizados: 0,
   });
+  const { testFilter } = useTestModeQuery();
 
   useEffect(() => {
     loadStats();
-  }, []);
+  }, [testFilter]);
 
   const loadStats = async () => {
     const [participantesRes, baseRes, sorteadosRes, premiosRes, premiosSorteadosRes, configRes] = await Promise.all([
-      supabase.from('participantes').select('*', { count: 'exact', head: true }),
-      supabase.from('base_oficial').select('*', { count: 'exact', head: true }),
-      supabase.from('sorteados').select('*', { count: 'exact', head: true }),
-      supabase.from('premios').select('*', { count: 'exact', head: true }),
-      supabase.from('sorteados').select('premio_id', { count: 'exact', head: true }).not('premio_id', 'is', null),
+      supabase.from('participantes').select('*', { count: 'exact', head: true }).eq('is_test', testFilter),
+      supabase.from('base_oficial').select('*', { count: 'exact', head: true }).eq('is_test', testFilter),
+      supabase.from('sorteados').select('*', { count: 'exact', head: true }).eq('is_test', testFilter),
+      supabase.from('premios').select('*', { count: 'exact', head: true }).eq('is_test', testFilter),
+      supabase.from('sorteados').select('premio_id', { count: 'exact', head: true }).not('premio_id', 'is', null).eq('is_test', testFilter),
       supabase.from('sistema_config').select('total_sorteios_realizados').single(),
     ]);
 
