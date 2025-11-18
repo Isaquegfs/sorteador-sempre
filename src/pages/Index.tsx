@@ -65,29 +65,35 @@ const Index = () => {
     
     let clientIP = 'unknown';
     
-    try {
-      // Check rate limit before proceeding (edge function extracts IP automatically)
-      const { data: rateLimitCheck, error: rateLimitError } = await supabase.functions.invoke('check-rate-limit', {
-        body: {} // Edge function extracts IP from request headers
-      });
+    // Check rate limit before proceeding (strict mode - fail if check fails)
+    const { data: rateLimitCheck, error: rateLimitError } = await supabase.functions.invoke('check-rate-limit', {
+      body: {} // Edge function extracts IP from request headers
+    });
 
-      if (rateLimitError || !rateLimitCheck?.allowed) {
-        toast({
-          title: "Limite excedido",
-          description: rateLimitCheck?.message || "Você atingiu o limite de cadastros. Por favor, tente novamente mais tarde.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Use the IP returned from the rate limit check
-      if (rateLimitCheck?.ip) {
-        clientIP = rateLimitCheck.ip;
-      }
-    } catch (error) {
-      console.error('Rate limit check failed:', error);
-      // Continue with registration if rate limit check fails (graceful degradation)
+    if (rateLimitError) {
+      console.error('Rate limit check failed:', rateLimitError);
+      toast({
+        title: "Erro no sistema",
+        description: "Não foi possível verificar o limite de cadastros. Por favor, tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!rateLimitCheck?.allowed) {
+      toast({
+        title: "Limite excedido",
+        description: rateLimitCheck?.message || "Você atingiu o limite de cadastros. Por favor, tente novamente mais tarde.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Use the IP returned from the rate limit check
+    if (rateLimitCheck?.ip) {
+      clientIP = rateLimitCheck.ip;
     }
     
     try {
