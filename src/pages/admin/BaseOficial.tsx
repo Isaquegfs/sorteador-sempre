@@ -107,6 +107,11 @@ const BaseOficial = () => {
     loadBaseOficial();
   }, [testFilter]);
 
+  // Reset to page 1 when changing tabs or items per page
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, itemsPerPage]);
+
   const loadBaseOficial = async () => {
     try {
       const { data, error } = await supabase
@@ -413,11 +418,6 @@ const BaseOficial = () => {
 
   const totalUnificado = baseOficial.length;
   const registrosCategoria = baseOficial.filter(item => item.categoria === activeTab);
-  
-  // Reset to page 1 when changing tabs or items per page
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, itemsPerPage]);
   
   // Pagination calculations
   const totalPages = itemsPerPage === -1 ? 1 : Math.ceil(registrosCategoria.length / itemsPerPage);
