@@ -13,6 +13,7 @@ import { InfinityLoader } from '@/components/sorteio/InfinityLoader';
 import { CountdownTimer } from '@/components/sorteio/CountdownTimer';
 import { analyzeImageBrightness, analyzeBackground, getContrastClasses } from '@/lib/contrast';
 import { cn } from '@/lib/utils';
+import { useTestModeQuery } from '@/hooks/useTestModeQuery';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,7 @@ interface Premio {
 }
 
 const Sorteio = () => {
+  const { isTestMode, testFilter } = useTestModeQuery();
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [winners, setWinners] = useState<Winner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -272,6 +274,7 @@ const Sorteio = () => {
         .from('premios')
         .select('*')
         .eq('status', 'Disponível')
+        .eq('is_test', testFilter)
         .order('ordem', { ascending: true });
 
       if (error) throw error;
@@ -310,7 +313,8 @@ const Sorteio = () => {
       // O histórico (sorteados) não afeta quem pode ser sorteado
       const { data: allParticipantes, error: participantesError } = await supabase
         .from('participantes')
-        .select('id, nome, setor, cidade');
+        .select('id, nome, setor, cidade')
+        .eq('is_test', testFilter);
 
       if (participantesError) throw participantesError;
 
@@ -438,6 +442,7 @@ const Sorteio = () => {
         sorteado_por: user?.id,
         premio_id: proximoPremio.id,
         confirmado: null, // Aguardando validação
+        is_test: isTestMode,
       };
 
       // Inserir no banco
@@ -557,6 +562,7 @@ const Sorteio = () => {
           setor: vencedor.setor,
           cidade: vencedor.cidade,
           sorteado_por: user?.id,
+          is_test: isTestMode,
         };
 
         // No modo com prêmios (1 vencedor), adicionar o prêmio e marcar como não confirmado
@@ -799,19 +805,21 @@ const Sorteio = () => {
   const handleResetSorteio = async () => {
     setIsResetting(true);
     try {
-      // Incrementar contador de sorteios realizados
-      const { data: config } = await supabase
-        .from('sistema_config')
-        .select('id, total_sorteios_realizados')
-        .single();
-
-      if (config) {
-        await supabase
+      // Incrementar contador de sorteios realizados apenas se NÃO estiver em modo de testes
+      if (!isTestMode) {
+        const { data: config } = await supabase
           .from('sistema_config')
-          .update({ 
-            total_sorteios_realizados: (config.total_sorteios_realizados || 0) + 1 
-          })
-          .eq('id', config.id);
+          .select('id, total_sorteios_realizados')
+          .single();
+
+        if (config) {
+          await supabase
+            .from('sistema_config')
+            .update({ 
+              total_sorteios_realizados: (config.total_sorteios_realizados || 0) + 1 
+            })
+            .eq('id', config.id);
+        }
       }
 
       // Resetar estados

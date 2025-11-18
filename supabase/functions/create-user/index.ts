@@ -66,6 +66,23 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate email length
+    if (email.length > 255) {
+      return new Response(
+        JSON.stringify({ error: 'Email must be less than 255 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     if (password.length < 6) {
       return new Response(
         JSON.stringify({ error: 'Password must be at least 6 characters' }),
