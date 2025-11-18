@@ -514,7 +514,7 @@ const BaseOficial = () => {
 
       {/* Dialog de preview de importação */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-6xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Pré-visualização da Importação</DialogTitle>
             <DialogDescription>
