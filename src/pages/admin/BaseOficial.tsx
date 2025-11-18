@@ -35,7 +35,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { hashCPF, censorCPF, validateCPF } from '@/lib/cpf';
+
+type Categoria = 'sempre' | 'autorizados' | 'pj' | 'onnet';
 
 interface BaseOficialItem {
   id: string;
@@ -45,6 +48,7 @@ interface BaseOficialItem {
   cidade: string;
   cpf_censurado: string;
   created_at: string;
+  categoria: Categoria;
 }
 
 interface ImportPreviewItem {
@@ -68,6 +72,7 @@ const BaseOficial = () => {
   const [importPreview, setImportPreview] = useState<ImportPreviewItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [temCabecalho, setTemCabecalho] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<Categoria>('sempre');
   const { toast } = useToast();
   const { testFilter } = useTestModeQuery();
 
@@ -84,7 +89,7 @@ const BaseOficial = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBaseOficial(data || []);
+      setBaseOficial((data || []) as BaseOficialItem[]);
     } catch (error) {
       toast({
         title: 'Erro ao carregar base oficial',
@@ -309,24 +314,35 @@ const BaseOficial = () => {
         cidade: item.cidade,
         cpf_hash: item.cpf_hash,
         cpf_censurado: item.cpf_censurado,
+        categoria: activeCategory,
+        is_test: testFilter,
       }));
 
       // Inserir dados em lotes de 500 usando upsert e ignorando duplicatas
       const BATCH_SIZE = 500;
+      let duplicateCount = 0;
+      
       for (let i = 0; i < records.length; i += BATCH_SIZE) {
         const batch = records.slice(i, i + BATCH_SIZE);
-        const { error } = await supabase
+        const { error, count } = await supabase
           .from('base_oficial')
-          .upsert(batch, { onConflict: 'cpf_hash', ignoreDuplicates: true });
+          .upsert(batch, { onConflict: 'cpf_hash', ignoreDuplicates: true, count: 'exact' });
 
         if (error) throw error;
+        
+        // Se count for menor que o batch size, significa que alguns foram duplicados
+        if (count !== null && count < batch.length) {
+          duplicateCount += (batch.length - count);
+        }
       }
 
       const invalidCount = importPreview.length - validItems.length;
 
       toast({
         title: 'Importação concluída',
-        description: `${validItems.length} registro(s) importado(s) com sucesso${invalidCount > 0 ? `. ${invalidCount} item(ns) ignorado(s) por erros.` : ''}`,
+        description: `${validItems.length - duplicateCount} registro(s) importado(s) com sucesso${
+          duplicateCount > 0 ? `. ${duplicateCount} CPF(s) já existente(s) na base unificada (ignorados)` : ''
+        }${invalidCount > 0 ? `. ${invalidCount} item(ns) com erro(s)` : ''}`,
       });
 
       setShowImportDialog(false);

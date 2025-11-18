@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       base_oficial: {
         Row: {
+          categoria: string
           cidade: string
           cpf_censurado: string
           cpf_hash: string
@@ -27,6 +28,7 @@ export type Database = {
           setor: string
         }
         Insert: {
+          categoria?: string
           cidade: string
           cpf_censurado: string
           cpf_hash: string
@@ -38,6 +40,7 @@ export type Database = {
           setor: string
         }
         Update: {
+          categoria?: string
           cidade?: string
           cpf_censurado?: string
           cpf_hash?: string
