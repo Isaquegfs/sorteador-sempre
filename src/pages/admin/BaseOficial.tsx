@@ -468,17 +468,17 @@ const BaseOficial = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Categoria)}>
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
-          <TabsTrigger value="sempre">
+        <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-auto">
+          <TabsTrigger value="sempre" className="whitespace-nowrap">
             Sempre ({contadores.sempre})
           </TabsTrigger>
-          <TabsTrigger value="autorizados">
+          <TabsTrigger value="autorizados" className="whitespace-nowrap">
             Autorizados ({contadores.autorizados})
           </TabsTrigger>
-          <TabsTrigger value="pj">
+          <TabsTrigger value="pj" className="whitespace-nowrap">
             PJ ({contadores.pj})
           </TabsTrigger>
-          <TabsTrigger value="onnet">
+          <TabsTrigger value="onnet" className="whitespace-nowrap">
             OnNet ({contadores.onnet})
           </TabsTrigger>
         </TabsList>
