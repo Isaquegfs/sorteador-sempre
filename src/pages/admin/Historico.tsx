@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTestModeQuery } from '@/hooks/useTestModeQuery';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,10 +45,11 @@ const Historico = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { testFilter } = useTestModeQuery();
 
   useEffect(() => {
     loadSorteados();
-  }, []);
+  }, [testFilter]);
 
   const loadSorteados = async () => {
     try {
@@ -63,6 +65,7 @@ const Historico = () => {
           confirmado_em,
           premios:premio_id (nome)
         `)
+        .eq('is_test', testFilter)
         .order('sorteado_em', { ascending: false });
 
       if (error) throw error;

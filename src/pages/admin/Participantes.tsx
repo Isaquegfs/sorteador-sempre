@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTestModeQuery } from '@/hooks/useTestModeQuery';
 import {
   Table,
   TableBody,
@@ -37,16 +38,18 @@ const Participantes = () => {
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { testFilter } = useTestModeQuery();
 
   useEffect(() => {
     loadParticipantes();
-  }, []);
+  }, [testFilter]);
 
   const loadParticipantes = async () => {
     try {
       const { data, error } = await supabase
         .from('participantes')
         .select('*')
+        .eq('is_test', testFilter)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
