@@ -799,6 +799,21 @@ const Sorteio = () => {
   const handleResetSorteio = async () => {
     setIsResetting(true);
     try {
+      // Incrementar contador de sorteios realizados
+      const { data: config } = await supabase
+        .from('sistema_config')
+        .select('id, total_sorteios_realizados')
+        .single();
+
+      if (config) {
+        await supabase
+          .from('sistema_config')
+          .update({ 
+            total_sorteios_realizados: (config.total_sorteios_realizados || 0) + 1 
+          })
+          .eq('id', config.id);
+      }
+
       // Resetar estados
       setShowWinners(false);
       setWinners([]);

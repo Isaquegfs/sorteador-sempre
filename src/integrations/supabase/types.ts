@@ -171,6 +171,7 @@ export type Database = {
           senha_criptografia_hash: string | null
           sorteio_com_premios: boolean | null
           tempo_confirmacao_segundos: number | null
+          total_sorteios_realizados: number
           updated_at: string
         }
         Insert: {
@@ -179,6 +180,7 @@ export type Database = {
           senha_criptografia_hash?: string | null
           sorteio_com_premios?: boolean | null
           tempo_confirmacao_segundos?: number | null
+          total_sorteios_realizados?: number
           updated_at?: string
         }
         Update: {
@@ -187,6 +189,7 @@ export type Database = {
           senha_criptografia_hash?: string | null
           sorteio_com_premios?: boolean | null
           tempo_confirmacao_segundos?: number | null
+          total_sorteios_realizados?: number
           updated_at?: string
         }
         Relationships: []
