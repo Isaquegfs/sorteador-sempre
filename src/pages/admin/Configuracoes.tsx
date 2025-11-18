@@ -257,10 +257,63 @@ const Configuracoes = () => {
     setIsClearing(true);
     
     try {
+      // Buscar informações do sorteio antes de limpar
+      const { data: participantesData, error: countError } = await supabase
+        .from('participantes')
+        .select('created_at, is_test')
+        .eq('is_test', isTestMode)
+        .order('created_at', { ascending: true });
+
+      if (countError) throw countError;
+
+      const totalParticipantes = participantesData?.length || 0;
+      
+      // Se houver participantes, registrar o sorteio
+      if (totalParticipantes > 0 && participantesData && participantesData.length > 0) {
+        const dataInicio = participantesData[0].created_at;
+        const dataFim = new Date().toISOString();
+
+        // Registrar sorteio concluído
+        const { error: sorteioError } = await supabase
+          .from('sorteios_realizados')
+          .insert({
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            total_participantes: totalParticipantes,
+            is_test: isTestMode
+          });
+
+        if (sorteioError) {
+          console.error('Erro ao registrar sorteio:', sorteioError);
+          // Não bloqueia a limpeza se falhar o registro
+        }
+
+        // Atualizar contador na tabela sistema_config
+        if (sistemaConfigId) {
+          const { data: configData } = await supabase
+            .from('sistema_config')
+            .select('total_sorteios_realizados')
+            .eq('id', sistemaConfigId)
+            .single();
+
+          const novoTotal = (configData?.total_sorteios_realizados || 0) + 1;
+
+          const { error: updateError } = await supabase
+            .from('sistema_config')
+            .update({ total_sorteios_realizados: novoTotal })
+            .eq('id', sistemaConfigId);
+
+          if (updateError) {
+            console.error('Erro ao atualizar contador:', updateError);
+          }
+        }
+      }
+
+      // Limpar tabela de participantes
       const { error } = await supabase
         .from('participantes')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        .eq('is_test', isTestMode);
 
       if (error) throw error;
 
