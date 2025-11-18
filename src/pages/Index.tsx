@@ -123,14 +123,31 @@ const Index = () => {
         return;
       }
 
-      // Inserir participante
+      // Buscar setor e cidade da base oficial
+      const { data: baseOficialData, error: baseError } = await supabase
+        .from('base_oficial')
+        .select('setor, cidade')
+        .eq('cpf_hash', cpfHash)
+        .maybeSingle();
+
+      if (baseError || !baseOficialData) {
+        toast({
+          title: "Erro ao buscar dados",
+          description: "Não foi possível recuperar suas informações da base oficial.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Inserir participante com dados da base oficial
       const { error } = await supabase
         .from('participantes')
         .insert({
           nome: formData.nome,
           email: formData.email,
-          setor: 'Não informado',
-          cidade: 'Não informado',
+          setor: baseOficialData.setor,
+          cidade: baseOficialData.cidade,
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
         });
