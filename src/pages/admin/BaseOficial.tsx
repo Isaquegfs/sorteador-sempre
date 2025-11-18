@@ -44,6 +44,16 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { hashCPF, censorCPF, validateCPF } from '@/lib/cpf';
 
 type Categoria = 'sempre' | 'autorizados' | 'pj' | 'onnet';
@@ -88,6 +98,8 @@ const BaseOficial = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [temCabecalho, setTemCabecalho] = useState(true);
   const [activeTab, setActiveTab] = useState<Categoria>('sempre');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
   const { testFilter } = useTestModeQuery();
 
@@ -401,6 +413,25 @@ const BaseOficial = () => {
 
   const totalUnificado = baseOficial.length;
   const registrosCategoria = baseOficial.filter(item => item.categoria === activeTab);
+  
+  // Reset to page 1 when changing tabs or items per page
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, itemsPerPage]);
+  
+  // Pagination calculations
+  const totalPages = itemsPerPage === -1 ? 1 : Math.ceil(registrosCategoria.length / itemsPerPage);
+  const startIndex = itemsPerPage === -1 ? 0 : (currentPage - 1) * itemsPerPage;
+  const endIndex = itemsPerPage === -1 ? registrosCategoria.length : startIndex + itemsPerPage;
+  const registrosPaginados = registrosCategoria.slice(startIndex, endIndex);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+  
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(value === 'all' ? -1 : parseInt(value));
+  };
 
   return (
     <div className="space-y-6">
@@ -487,13 +518,32 @@ const BaseOficial = () => {
           <TabsContent key={categoria} value={categoria}>
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  {categoriaLabels[categoria]}
-                </CardTitle>
-                <CardDescription>
-                  {contadores[categoria]} participante(s) nesta categoria
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      {categoriaLabels[categoria]}
+                    </CardTitle>
+                    <CardDescription>
+                      {contadores[categoria]} participante(s) nesta categoria
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Exibir:</span>
+                    <Select value={itemsPerPage === -1 ? 'all' : itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="20">20 por página</SelectItem>
+                        <SelectItem value="30">30 por página</SelectItem>
+                        <SelectItem value="50">50 por página</SelectItem>
+                        <SelectItem value="100">100 por página</SelectItem>
+                        <SelectItem value="all">Todos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {registrosCategoria.length === 0 ? (
@@ -501,19 +551,20 @@ const BaseOficial = () => {
                     Nenhum participante na categoria "{categoriaLabels[categoria]}"
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>CPF</TableHead>
-                        <TableHead>E-mail</TableHead>
-                        <TableHead>Setor</TableHead>
-                        <TableHead>Cidade</TableHead>
-                        <TableHead className="w-[100px]">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {registrosCategoria.map((item) => (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>CPF</TableHead>
+                          <TableHead>E-mail</TableHead>
+                          <TableHead>Setor</TableHead>
+                          <TableHead>Cidade</TableHead>
+                          <TableHead className="w-[100px]">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {registrosPaginados.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.nome}</TableCell>
                           <TableCell>{item.cpf_censurado}</TableCell>
@@ -556,9 +607,66 @@ const BaseOficial = () => {
                             </AlertDialog>
                           </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    
+                    {totalPages > 1 && (
+                      <div className="mt-4 flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          Mostrando {startIndex + 1} a {Math.min(endIndex, registrosCategoria.length)} de {registrosCategoria.length} registros
+                        </p>
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                            
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                              let pageNum;
+                              if (totalPages <= 5) {
+                                pageNum = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                              } else {
+                                pageNum = currentPage - 2 + i;
+                              }
+                              
+                              return (
+                                <PaginationItem key={pageNum}>
+                                  <PaginationLink
+                                    onClick={() => handlePageChange(pageNum)}
+                                    isActive={currentPage === pageNum}
+                                    className="cursor-pointer"
+                                  >
+                                    {pageNum}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            })}
+                            
+                            {totalPages > 5 && currentPage < totalPages - 2 && (
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )}
+                            
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
