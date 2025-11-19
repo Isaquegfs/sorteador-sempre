@@ -1330,7 +1330,7 @@ const Sorteio = () => {
                   delay={index * 200}
                   autoReveal={!emSequencia && sequenciaVencedores.length > 0}
                   onFlip={() => {
-                    if (!showCountdown && !currentWinnerId && sorteioComPremios && ativarContadorTempo) {
+                    if (!showCountdown && !currentWinnerId && (sorteioComPremios || ativarContadorTempo)) {
                       setCurrentWinnerId(winner.id);
                       setShowCountdown(true);
                       
