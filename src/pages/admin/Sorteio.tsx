@@ -233,9 +233,14 @@ const Sorteio = () => {
     loadCountdownConfig();
     loadSorteioConfig();
     
-    // Restaurar estado do sorteio se existir
+    // Restaurar estado do sorteio APENAS se houver um sorteio realmente em andamento
     const savedState = restoreSorteioState();
-    if (savedState) {
+    const hasActiveSorteio =
+      savedState &&
+      savedState.currentWinnerId &&
+      savedState.showCountdown;
+
+    if (hasActiveSorteio) {
       setCurrentWinnerId(savedState.currentWinnerId);
       setWinners(savedState.winners);
       setShowWinners(true);
@@ -255,8 +260,8 @@ const Sorteio = () => {
         description: 'O sorteio em andamento foi retomado.',
       });
     } else {
-      // Se não houver estado local, tentar recuperar um sorteio pendente no backend
-      loadPendingSorteioFromDb();
+      // Nenhum sorteio em andamento: limpar qualquer estado antigo persistido
+      clearSorteioState();
     }
   }, []);
 
