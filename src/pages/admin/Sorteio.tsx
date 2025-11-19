@@ -1009,18 +1009,18 @@ const Sorteio = () => {
         {/* Próximo prêmio a ser sorteado */}
         {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && !emSequencia && (
           <div className={cn(
-            "text-center mb-4 p-4 rounded-lg border-2 animate-fade-in max-w-md mx-auto backdrop-blur-md",
+            "text-center mb-4 p-4 rounded-lg border-2 animate-enter max-w-md mx-auto backdrop-blur-md transition-all duration-300",
             contrastClasses.cardBg,
             contrastClasses.cardBorder
           )}>
-            <p className={cn("text-lg mb-2", contrastClasses.textMuted)}>
+            <p className={cn("text-lg mb-2 transition-opacity duration-300", contrastClasses.textMuted)}>
               Próximo prêmio a ser sorteado:
             </p>
-            <h3 className={cn("text-2xl font-bold mb-2 break-words", contrastClasses.numberColor)}>
+            <h3 className={cn("text-2xl font-bold mb-2 break-words transition-all duration-300", contrastClasses.numberColor)}>
               {proximoPremio.nome}
             </h3>
             {proximoPremio.descricao && (
-              <p className={cn("text-sm break-words", contrastClasses.textSecondary)}>
+              <p className={cn("text-sm break-words transition-opacity duration-300", contrastClasses.textSecondary)}>
                 {proximoPremio.descricao}
               </p>
             )}
@@ -1030,24 +1030,24 @@ const Sorteio = () => {
         {/* Indicador de progresso da sequência */}
         {emSequencia && !(aguardandoProximo && sequenciaAtual >= sequenciaTotal) && (
           <div className={cn(
-            "text-center mb-4 p-4 rounded-lg border-2 animate-fade-in max-w-md mx-auto backdrop-blur-md",
+            "text-center mb-4 p-4 rounded-lg border-2 animate-enter max-w-md mx-auto backdrop-blur-md transition-all duration-300",
             contrastClasses.cardBg,
             contrastClasses.cardBorder
           )}>
             {!aguardandoProximo && (
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <div className={cn("text-4xl font-bold", contrastClasses.numberColor)}>
+              <div className="flex items-center justify-center gap-3 mb-3 animate-scale-in">
+                <div className={cn("text-4xl font-bold transition-all duration-300", contrastClasses.numberColor)}>
                   {sequenciaAtual} / {sequenciaTotal}
                 </div>
               </div>
             )}
             {proximoPremio && (
               <>
-                <p className={cn("text-sm mb-2", contrastClasses.textMuted)}>
+                <p className={cn("text-sm mb-2 transition-opacity duration-300", contrastClasses.textMuted)}>
                   Prêmio atual:
                 </p>
                 <p className={cn(
-                  "font-bold text-3xl",
+                  "font-bold text-3xl transition-all duration-300",
                   contrastClasses.textSecondary
                 )}>
                   {proximoPremio.nome}
@@ -1060,20 +1060,20 @@ const Sorteio = () => {
         {/* Controles de sequência - Aguardando próximo sorteio */}
         {aguardandoProximo && emSequencia && !isSorteando && !isAnimating && (
           <div className={cn(
-            "text-center mb-4 p-4 rounded-lg border-2 space-y-4 animate-fade-in max-w-md mx-auto backdrop-blur-md",
+            "text-center mb-4 p-4 rounded-lg border-2 space-y-4 animate-enter max-w-md mx-auto backdrop-blur-md transition-all duration-300",
             contrastClasses.cardBg,
             contrastClasses.cardBorder
           )}>
-            <p className={cn("text-lg font-semibold", contrastClasses.textPrimary)}>
+            <p className={cn("text-lg font-semibold transition-opacity duration-300", contrastClasses.textPrimary)}>
               Sorteio {sequenciaAtual} de {sequenciaTotal} concluído
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 animate-fade-in">
               {sequenciaAtual < sequenciaTotal ? (
                 <>
                   <Button
                     onClick={proximoSorteio}
                     size="lg"
-                    className="gap-2"
+                    className="gap-2 hover-scale"
                   >
                     <Sparkles className="h-5 w-5" />
                     Próximo Sorteio ({sequenciaAtual + 1}/{sequenciaTotal})
@@ -1082,6 +1082,7 @@ const Sorteio = () => {
                     onClick={cancelarSequencia}
                     variant="destructive"
                     size="lg"
+                    className="hover-scale"
                   >
                     Cancelar Sequência
                   </Button>
@@ -1090,7 +1091,7 @@ const Sorteio = () => {
                 <Button
                   onClick={finalizarSequencia}
                   size="lg"
-                  className="gap-2"
+                  className="gap-2 hover-scale"
                 >
                   <Sparkles className="h-5 w-5" />
                   Ver Resumo Final
