@@ -30,7 +30,7 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
   };
 
   return (
-    <div className="relative flex justify-center items-center p-4">
+    <div className="relative flex justify-center items-center p-6">
       <div className="relative">
         {/* Glow effect */}
         {isAnimating && (
@@ -46,7 +46,7 @@ export const LogoAnimation = ({ isAnimating }: LogoAnimationProps) => {
         <img 
           src={logoUrl} 
           alt="Sempre Internet" 
-          className={`h-24 w-auto relative z-10 transition-transform duration-300 ${
+          className={`h-40 w-auto relative z-10 transition-transform duration-300 ${
             isAnimating ? 'scale-110' : 'scale-100'
           }`}
         />
