@@ -70,7 +70,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestModeQuery } from '@/hooks/useTestModeQuery';
 
-type PremioStatus = 'Disponível' | 'Sorteado' | 'Reprogramado' | 'Cancelado';
+type PremioStatus = 'Disponível' | 'Reprogramado' | 'Cancelado';
 
 interface Premio {
   id: string;
@@ -96,6 +96,7 @@ interface ImportPreviewItem {
 }
 
 export default function Premios() {
+  const { testFilter } = useTestModeQuery();
   const [premios, setPremios] = useState<Premio[]>([]);
   const [premiosSorteados, setPremiosSorteados] = useState<Premio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,7 +125,7 @@ export default function Premios() {
   useEffect(() => {
     loadPremios();
     loadPremiosSorteados();
-  }, []);
+  }, [testFilter]);
 
   const loadPremios = async () => {
     try {
@@ -133,6 +134,7 @@ export default function Premios() {
         .from('premios')
         .select('*')
         .in('status', ['Disponível', 'Reprogramado'])
+        .eq('is_test', testFilter)
         .order('ordem', { ascending: true });
 
       if (error) throw error;
@@ -151,13 +153,13 @@ export default function Premios() {
   const loadPremiosSorteados = async () => {
     try {
       const { data, error } = await supabase
-        .from('premios')
+        .from('premios_sorteados')
         .select('*')
-        .eq('status', 'Sorteado')
-        .order('updated_at', { ascending: false });
+        .eq('is_test', testFilter)
+        .order('sorteado_em', { ascending: false });
 
       if (error) throw error;
-      setPremiosSorteados((data || []) as Premio[]);
+      setPremiosSorteados((data || []) as any);
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar prêmios sorteados',
@@ -646,8 +648,6 @@ export default function Premios() {
     switch (status) {
       case 'Disponível':
         return 'default';
-      case 'Sorteado':
-        return 'default'; // Usar default com classe customizada para laranja
       case 'Reprogramado':
         return 'outline';
       case 'Cancelado':
@@ -699,10 +699,7 @@ export default function Premios() {
             : '-'}
         </TableCell>
         <TableCell>
-          <Badge 
-            variant={getStatusVariant(premio.status)}
-            className={premio.status === 'Sorteado' ? 'bg-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/90' : ''}
-          >
+          <Badge variant={getStatusVariant(premio.status)}>
             {premio.status}
           </Badge>
         </TableCell>
@@ -964,28 +961,19 @@ export default function Premios() {
                       <TableHead className="w-20">Ordem</TableHead>
                       <TableHead>Nome do Prêmio</TableHead>
                       <TableHead>Descrição</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Data de Atualização</TableHead>
+                      <TableHead>Data do Sorteio</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {premiosSorteados.map((premio) => (
+                    {premiosSorteados.map((premio: any) => (
                       <TableRow key={premio.id}>
-                        <TableCell className="font-medium">{premio.ordem}</TableCell>
+                        <TableCell className="font-medium">{premio.ordem_original}</TableCell>
                         <TableCell className="font-medium">{premio.nome}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {premio.descricao || '-'}
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            variant="default"
-                            className="bg-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/90"
-                          >
-                            {premio.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(premio.updated_at).toLocaleString('pt-BR', {
+                          {new Date(premio.sorteado_em).toLocaleString('pt-BR', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',

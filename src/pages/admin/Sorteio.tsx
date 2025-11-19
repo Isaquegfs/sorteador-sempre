@@ -674,12 +674,37 @@ const Sorteio = () => {
 
       if (updateError) throw updateError;
 
-      // Atualizar status do prêmio para "Sorteado"
+      // Mover prêmio para tabela de premios_sorteados e remover da tabela premios
       if (sorteado.premio_id) {
-        await supabase
+        // Buscar dados do prêmio
+        const { data: premioData, error: premioError } = await supabase
           .from('premios')
-          .update({ status: 'Sorteado' })
+          .select('*')
+          .eq('id', sorteado.premio_id)
+          .single();
+
+        if (premioError) throw premioError;
+
+        // Inserir na tabela de prêmios sorteados
+        const { error: insertError } = await supabase
+          .from('premios_sorteados')
+          .insert({
+            premio_id: premioData.id,
+            nome: premioData.nome,
+            descricao: premioData.descricao,
+            ordem_original: premioData.ordem,
+            is_test: premioData.is_test,
+          });
+
+        if (insertError) throw insertError;
+
+        // Deletar da tabela de prêmios
+        const { error: deleteError } = await supabase
+          .from('premios')
+          .delete()
           .eq('id', sorteado.premio_id);
+
+        if (deleteError) throw deleteError;
       }
 
       toast({
