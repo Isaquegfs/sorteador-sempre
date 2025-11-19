@@ -76,7 +76,7 @@ export const PublicPageLayout = ({ children }: PublicPageLayoutProps) => {
         </div>
 
         {/* Rodapé */}
-        <p className="text-center text-white text-sm mt-6 drop-shadow-lg">
+        <p className="text-center text-white text-sm mt-6">
           Sistema de Sorteio Sempre Internet
         </p>
       </div>
