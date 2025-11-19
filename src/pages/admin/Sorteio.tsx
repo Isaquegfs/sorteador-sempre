@@ -168,8 +168,10 @@ const Sorteio = () => {
   useEffect(() => {
     if (!sorteioComPremios) return;
 
+    let debounceTimer: NodeJS.Timeout;
+
     const channel = supabase
-      .channel('premios-changes')
+      .channel('premios-changes-' + Date.now())
       .on(
         'postgres_changes',
         {
@@ -178,15 +180,20 @@ const Sorteio = () => {
           table: 'premios',
         },
         () => {
-          loadPremiosDisponiveis();
+          // Debounce para evitar múltiplas chamadas rápidas
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            loadPremiosDisponiveis();
+          }, 300);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [sorteioComPremios]);
+  }, [sorteioComPremios, testFilter]);
 
   const loadActiveTema = async () => {
     try {
