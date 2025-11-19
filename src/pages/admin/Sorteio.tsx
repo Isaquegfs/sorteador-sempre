@@ -98,6 +98,8 @@ const Sorteio = () => {
   const [contrastClasses, setContrastClasses] = useState(getContrastClasses('dark'));
   
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
+  const DRAW_STATE_KEY = 'sorteio_active_draw';
+  
   const persistExcluded = (set: Set<string>) => {
     try {
       localStorage.setItem(EXCLUDED_STORAGE_KEY, JSON.stringify(Array.from(set)));
@@ -111,6 +113,40 @@ const Sorteio = () => {
       return new Set(arr);
     } catch {
       return new Set();
+    }
+  };
+
+  // Gerenciar estado ativo do sorteio
+  const saveDrawState = (winner: Winner, timestamp: number, deadline: number) => {
+    try {
+      const state = {
+        winnerId: winner.id,
+        winnerData: winner,
+        prizeId: winner.premio?.id,
+        timestamp,
+        deadline,
+      };
+      localStorage.setItem(DRAW_STATE_KEY, JSON.stringify(state));
+      console.log('[Draw] Salvando sorteio:', { winnerId: winner.id, prizeId: winner.premio?.id, timestamp });
+    } catch (e) {
+      console.error('[Draw] Erro ao salvar estado:', e);
+    }
+  };
+
+  const clearDrawState = () => {
+    try {
+      localStorage.removeItem(DRAW_STATE_KEY);
+      console.log('[Draw] Estado limpo');
+    } catch {}
+  };
+
+  const getDrawState = () => {
+    try {
+      const raw = localStorage.getItem(DRAW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
     }
   };
   const { toast } = useToast();
@@ -141,6 +177,26 @@ const Sorteio = () => {
     loadActiveTema();
     loadCountdownConfig();
     loadSorteioConfig();
+
+    // Restaurar estado do sorteio se existir
+    const drawState = getDrawState();
+    if (drawState) {
+      const tempoDecorrido = Date.now() - drawState.timestamp;
+      console.log('[Draw] Tempo decorrido ao retornar:', tempoDecorrido);
+
+      if (tempoDecorrido < countdownDuration * 1000) {
+        // Voltou dentro do prazo: restaurar card e continuar timer
+        console.log('[Draw] Restaurando card:', tempoDecorrido < countdownDuration * 1000);
+        setWinners([drawState.winnerData]);
+        setShowWinners(true);
+        setCurrentWinnerId(drawState.winnerId);
+        setShowCountdown(true);
+      } else {
+        // Voltou após expiração: processar como "não compareceu"
+        console.log('[Draw] Processando expiração automática:', tempoDecorrido >= countdownDuration * 1000);
+        processarExpiracao(drawState);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -459,12 +515,7 @@ const Sorteio = () => {
 
       if (error) throw error;
 
-      // Atualizar listas
-      const novosExcluidos = new Set(excludedIds);
-      novosExcluidos.add(vencedor.id);
-      setExcludedIds(novosExcluidos);
-      persistExcluded(novosExcluidos);
-      setParticipantes(prev => prev.filter(p => p.id !== vencedor.id));
+      // NÃO remover participante ainda - será removido apenas após confirmação/rejeição
 
       // Preparar winner com prêmio
       const winnerComPremio: Winner = {
@@ -517,6 +568,7 @@ const Sorteio = () => {
     setAguardandoProximo(false);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    clearDrawState(); // Limpar estado salvo
     
     toast({
       title: 'Sequência cancelada',
@@ -532,6 +584,7 @@ const Sorteio = () => {
     setAguardandoProximo(false);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    clearDrawState(); // Limpar estado salvo
     
     if (sequenciaVencedores.length > 0) {
       setWinners(sequenciaVencedores);
@@ -602,12 +655,15 @@ const Sorteio = () => {
         } : undefined,
       }));
 
-      // Atualizar lista temporária: remover vencedores da pool atual
-      const novosExcluidos = new Set(excludedIds);
-      vencedores.forEach(v => novosExcluidos.add(v.id));
-      setExcludedIds(novosExcluidos);
-      persistExcluded(novosExcluidos);
-      setParticipantes(prev => prev.filter(p => !novosExcluidos.has(p.id)));
+      // NÃO remover participantes ainda no modo com prêmios - será removido após confirmação/rejeição
+      // No modo tradicional (sem prêmios), remover imediatamente pois não há validação
+      if (!sorteioComPremios) {
+        const novosExcluidos = new Set(excludedIds);
+        vencedores.forEach(v => novosExcluidos.add(v.id));
+        setExcludedIds(novosExcluidos);
+        persistExcluded(novosExcluidos);
+        setParticipantes(prev => prev.filter(p => !novosExcluidos.has(p.id)));
+      }
 
       // Exibir vencedores
       setWinners(winnersComPremio);
@@ -639,6 +695,7 @@ const Sorteio = () => {
     setNumVencedores(1);
     setShowCountdown(false);
     setCurrentWinnerId(null);
+    clearDrawState(); // Limpar estado salvo
     
     // Resetar estados da sequência
     setEmSequencia(false);
@@ -646,6 +703,74 @@ const Sorteio = () => {
     setSequenciaAtual(0);
     setSequenciaVencedores([]);
     setAguardandoProximo(false);
+  };
+
+  // Processar expiração automática quando usuário volta após deadline
+  const processarExpiracao = async (drawState: any) => {
+    try {
+      // Buscar o registro do sorteado
+      const { data: sorteado, error: fetchError } = await supabase
+        .from('sorteados')
+        .select('id, premio_id')
+        .eq('participante_id', drawState.winnerId)
+        .order('sorteado_em', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError) {
+        console.error('[Draw] Erro ao buscar sorteado:', fetchError);
+        clearDrawState();
+        return;
+      }
+
+      // Marcar como não confirmado
+      await supabase
+        .from('sorteados')
+        .update({
+          confirmado: false,
+          confirmado_em: new Date().toISOString(),
+        })
+        .eq('id', sorteado.id);
+
+      // Reprogramar prêmio se houver
+      if (sorteado.premio_id) {
+        const { data: premios } = await supabase
+          .from('premios')
+          .select('ordem')
+          .order('ordem', { ascending: false })
+          .limit(1);
+
+        const novaOrdem = premios && premios.length > 0 ? premios[0].ordem + 1 : 1;
+
+        await supabase
+          .from('premios')
+          .update({
+            status: 'Reprogramado',
+            ordem: novaOrdem,
+          })
+          .eq('id', sorteado.premio_id);
+      }
+
+      // Remover participante da lista
+      const novosExcluidos = new Set(excludedIds);
+      novosExcluidos.add(drawState.winnerId);
+      setExcludedIds(novosExcluidos);
+      persistExcluded(novosExcluidos);
+      
+      // Recarregar participantes
+      await loadParticipantes(novosExcluidos);
+
+      clearDrawState();
+
+      toast({
+        title: 'Sorteio expirado',
+        description: 'O sorteado não compareceu no prazo. Prêmio reprogramado.',
+        variant: 'destructive',
+      });
+    } catch (error) {
+      console.error('[Draw] Erro ao processar expiração:', error);
+      clearDrawState();
+    }
   };
 
   const handleConfirmWinner = async () => {
@@ -706,6 +831,13 @@ const Sorteio = () => {
         if (deleteError) throw deleteError;
       }
 
+      // Remover participante da lista agora que foi confirmado
+      const novosExcluidos = new Set(excludedIds);
+      novosExcluidos.add(currentWinnerId);
+      setExcludedIds(novosExcluidos);
+      persistExcluded(novosExcluidos);
+      setParticipantes(prev => prev.filter(p => p.id !== currentWinnerId));
+
       toast({
         title: 'Sorteado confirmado!',
         description: 'A presença foi registrada e o prêmio foi entregue.',
@@ -713,6 +845,7 @@ const Sorteio = () => {
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
+      clearDrawState();
 
       // Se estiver em sequência, aguardar próximo sorteio
       if (emSequencia) {
@@ -1197,9 +1330,14 @@ const Sorteio = () => {
                   delay={index * 200}
                   autoReveal={!emSequencia && sequenciaVencedores.length > 0}
                   onFlip={() => {
-                    if (!showCountdown && !currentWinnerId) {
+                    if (!showCountdown && !currentWinnerId && sorteioComPremios && ativarContadorTempo) {
                       setCurrentWinnerId(winner.id);
                       setShowCountdown(true);
+                      
+                      // Salvar estado do sorteio no localStorage
+                      const timestamp = Date.now();
+                      const deadline = timestamp + (countdownDuration * 1000);
+                      saveDrawState(winner, timestamp, deadline);
                     }
                   }}
                 />
