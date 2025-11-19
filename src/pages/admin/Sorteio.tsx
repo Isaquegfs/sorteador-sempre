@@ -692,7 +692,6 @@ const Sorteio = () => {
             premio_id: premioData.id,
             nome: premioData.nome,
             descricao: premioData.descricao,
-            ordem_original: premioData.ordem,
             is_test: premioData.is_test,
           });
 
