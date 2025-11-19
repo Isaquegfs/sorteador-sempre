@@ -356,21 +356,27 @@ export default function Premios() {
     // Atualizar estado local imediatamente para feedback visual
     setPremios(newPremios);
 
-    // Salvar no banco de dados
+    // Salvar no banco de dados usando offset temporário para evitar conflitos
     try {
-      const updates = newPremios.map((premio, index) => ({
-        id: premio.id,
-        ordem: index + 1,
-      }));
-
-      for (const update of updates) {
-        const { error } = await supabase
+      // Primeiro, mover todos para ordem negativa temporária
+      const tempUpdates = newPremios.map((premio, index) => 
+        supabase
           .from('premios')
-          .update({ ordem: update.ordem })
-          .eq('id', update.id);
+          .update({ ordem: -(index + 1000) })
+          .eq('id', premio.id)
+      );
+      
+      await Promise.all(tempUpdates);
 
-        if (error) throw error;
-      }
+      // Depois, atualizar para as ordens finais corretas
+      const finalUpdates = newPremios.map((premio, index) => 
+        supabase
+          .from('premios')
+          .update({ ordem: index + 1 })
+          .eq('id', premio.id)
+      );
+      
+      await Promise.all(finalUpdates);
 
       toast({
         title: 'Alteração salva com sucesso',
@@ -397,6 +403,12 @@ export default function Premios() {
     setPremios(newPremios);
 
     try {
+      // Usar valores temporários negativos para evitar conflitos
+      await supabase
+        .from('premios')
+        .update({ ordem: -1000 })
+        .eq('id', newPremios[index - 1].id);
+
       await supabase
         .from('premios')
         .update({ ordem: index })
@@ -412,6 +424,7 @@ export default function Premios() {
         description: 'Prêmio movido para cima',
       });
     } catch (error: any) {
+      console.error('Erro ao mover prêmio para cima:', error);
       toast({
         title: 'Erro ao mover prêmio',
         description: error.message,
@@ -431,6 +444,12 @@ export default function Premios() {
     setPremios(newPremios);
 
     try {
+      // Usar valores temporários negativos para evitar conflitos
+      await supabase
+        .from('premios')
+        .update({ ordem: -1000 })
+        .eq('id', newPremios[index].id);
+
       await supabase
         .from('premios')
         .update({ ordem: index + 2 })
@@ -446,6 +465,7 @@ export default function Premios() {
         description: 'Prêmio movido para baixo',
       });
     } catch (error: any) {
+      console.error('Erro ao mover prêmio para baixo:', error);
       toast({
         title: 'Erro ao mover prêmio',
         description: error.message,
