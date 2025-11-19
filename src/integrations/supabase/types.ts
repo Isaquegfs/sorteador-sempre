@@ -185,6 +185,39 @@ export type Database = {
         }
         Relationships: []
       }
+      premios_sorteados: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          is_test: boolean
+          nome: string
+          ordem_original: number
+          premio_id: string
+          sorteado_em: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_test?: boolean
+          nome: string
+          ordem_original: number
+          premio_id: string
+          sorteado_em?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_test?: boolean
+          nome?: string
+          ordem_original?: number
+          premio_id?: string
+          sorteado_em?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
