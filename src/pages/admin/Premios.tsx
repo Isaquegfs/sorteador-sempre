@@ -364,10 +364,12 @@ export default function Premios() {
       }));
 
       for (const update of updates) {
-        await supabase
+        const { error } = await supabase
           .from('premios')
           .update({ ordem: update.ordem })
           .eq('id', update.id);
+
+        if (error) throw error;
       }
 
       toast({
@@ -375,9 +377,10 @@ export default function Premios() {
         description: 'A ordem dos prêmios foi atualizada',
       });
     } catch (error: any) {
+      console.error('Erro ao salvar nova ordem de prêmios:', error);
       toast({
         title: 'Erro ao reordenar',
-        description: error.message,
+        description: error.message ?? 'Não foi possível salvar a nova ordem dos prêmios.',
         variant: 'destructive',
       });
       loadPremios(); // Recarregar em caso de erro
