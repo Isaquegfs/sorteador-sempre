@@ -1009,7 +1009,7 @@ const Sorteio = () => {
         {/* Próximo prêmio a ser sorteado */}
         {sorteioComPremios && proximoPremio && !showWinners && !isAnimating && !emSequencia && (
           <div className="relative">
-            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
+            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl" />
             <div className={cn(
               "text-center mb-4 p-4 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
               contrastClasses.cardBg,
@@ -1033,7 +1033,7 @@ const Sorteio = () => {
         {/* Indicador de progresso da sequência */}
         {emSequencia && !(aguardandoProximo && sequenciaAtual >= sequenciaTotal) && (
           <div className="relative">
-            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
+            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl" />
             <div className={cn(
               "text-center mb-4 p-4 rounded-lg border-2 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
               contrastClasses.cardBg,
@@ -1066,7 +1066,7 @@ const Sorteio = () => {
         {/* Controles de sequência - Aguardando próximo sorteio */}
         {aguardandoProximo && emSequencia && !isSorteando && !isAnimating && (
           <div className="relative">
-            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl scale-110" />
+            <div className="absolute inset-0 -z-10 bg-black/20 blur-xl rounded-2xl" />
             <div className={cn(
               "text-center mb-4 p-4 rounded-lg border-2 space-y-4 animate-fade-in max-w-md mx-auto shadow-2xl backdrop-blur-md",
               contrastClasses.cardBg,
