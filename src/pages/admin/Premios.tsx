@@ -371,8 +371,8 @@ export default function Premios() {
       }
 
       toast({
-        title: 'Ordem atualizada',
-        description: 'A ordem dos prêmios foi atualizada com sucesso',
+        title: 'Alteração salva com sucesso',
+        description: 'A ordem dos prêmios foi atualizada',
       });
     } catch (error: any) {
       toast({
@@ -405,7 +405,8 @@ export default function Premios() {
         .eq('id', newPremios[index].id);
 
       toast({
-        title: 'Prêmio movido para cima',
+        title: 'Alteração salva com sucesso',
+        description: 'Prêmio movido para cima',
       });
     } catch (error: any) {
       toast({
@@ -438,7 +439,8 @@ export default function Premios() {
         .eq('id', newPremios[index + 1].id);
 
       toast({
-        title: 'Prêmio movido para baixo',
+        title: 'Alteração salva com sucesso',
+        description: 'Prêmio movido para baixo',
       });
     } catch (error: any) {
       toast({
