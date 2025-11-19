@@ -73,7 +73,6 @@ const Sorteio = () => {
   const [showCountdown, setShowCountdown] = useState(false);
   const [currentWinnerId, setCurrentWinnerId] = useState<string | null>(null);
   const [countdownDuration, setCountdownDuration] = useState(40);
-  const [countdownStartTimestamp, setCountdownStartTimestamp] = useState<number | null>(null);
   const [sorteioComPremios, setSorteioComPremios] = useState(false);
   const [ativarContadorTempo, setAtivarContadorTempo] = useState(false);
   const [premiosDisponiveis, setPremiosDisponiveis] = useState<Premio[]>([]);
@@ -99,8 +98,6 @@ const Sorteio = () => {
   const [contrastClasses, setContrastClasses] = useState(getContrastClasses('dark'));
   
   const EXCLUDED_STORAGE_KEY = 'sorteio_excluded_ids';
-  const SORTEIO_STATE_KEY = 'sorteio_state_persistido';
-  
   const persistExcluded = (set: Set<string>) => {
     try {
       localStorage.setItem(EXCLUDED_STORAGE_KEY, JSON.stringify(Array.from(set)));
@@ -116,94 +113,6 @@ const Sorteio = () => {
       return new Set();
     }
   };
-
-  // Persistir estado completo do sorteio
-  const persistSorteioState = (state: {
-    currentWinnerId: string;
-    winners: Winner[];
-    showCountdown: boolean;
-    countdownStartTimestamp: number;
-    countdownDuration: number;
-    emSequencia: boolean;
-    sequenciaTotal: number;
-    sequenciaAtual: number;
-    sequenciaVencedores: Winner[];
-    proximoPremio: Premio | null;
-  }) => {
-    try {
-      localStorage.setItem(SORTEIO_STATE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('Erro ao persistir estado do sorteio:', error);
-    }
-  };
-
-  // Restaurar estado do sorteio
-  const restoreSorteioState = () => {
-    try {
-      const raw = localStorage.getItem(SORTEIO_STATE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch (error) {
-      console.error('Erro ao restaurar estado do sorteio:', error);
-      return null;
-    }
-  };
-
-  // Limpar estado persistido
-  const clearSorteioState = () => {
-    try {
-      localStorage.removeItem(SORTEIO_STATE_KEY);
-    } catch {}
-  };
-  
-  // Recuperar eventual sorteio pendente diretamente do backend (fallback mais robusto)
-  const loadPendingSorteioFromDb = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('sorteados')
-        .select('participante_id, nome, setor, cidade, premio_id, is_test')
-        .is('confirmado', null)
-        .eq('is_test', isTestMode)
-        .order('sorteado_em', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error || !data || !data.participante_id) return;
-
-      let premioDetalhes: Premio | undefined;
-      if (data.premio_id) {
-        const { data: premio } = await supabase
-          .from('premios')
-          .select('id, nome, descricao')
-          .eq('id', data.premio_id)
-          .single();
-
-        if (premio) {
-          premioDetalhes = {
-            id: premio.id,
-            nome: premio.nome,
-            descricao: premio.descricao,
-            ordem: 0,
-          };
-        }
-      }
-
-      const pendingWinner: Winner = {
-        id: data.participante_id,
-        nome: data.nome,
-        setor: data.setor,
-        cidade: data.cidade,
-        premio: premioDetalhes,
-      };
-
-      setWinners([pendingWinner]);
-      setShowWinners(true);
-      // Countdown e currentWinnerId só serão iniciados quando o cartão for revelado (onFlip)
-    } catch (error) {
-      console.error('Erro ao recuperar sorteio pendente do backend:', error);
-    }
-  };
-
   const { toast } = useToast();
 
   // Helper function para obter os próximos 4 prêmios
@@ -232,37 +141,6 @@ const Sorteio = () => {
     loadActiveTema();
     loadCountdownConfig();
     loadSorteioConfig();
-    
-    // Restaurar estado do sorteio APENAS se houver um sorteio realmente em andamento
-    const savedState = restoreSorteioState();
-    const hasActiveSorteio =
-      savedState &&
-      savedState.currentWinnerId &&
-      savedState.showCountdown;
-
-    if (hasActiveSorteio) {
-      setCurrentWinnerId(savedState.currentWinnerId);
-      setWinners(savedState.winners);
-      setShowWinners(true);
-      setShowCountdown(savedState.showCountdown);
-      setCountdownStartTimestamp(savedState.countdownStartTimestamp);
-      setCountdownDuration(savedState.countdownDuration);
-      setEmSequencia(savedState.emSequencia);
-      setSequenciaTotal(savedState.sequenciaTotal);
-      setSequenciaAtual(savedState.sequenciaAtual);
-      setSequenciaVencedores(savedState.sequenciaVencedores);
-      if (savedState.proximoPremio) {
-        setProximoPremio(savedState.proximoPremio);
-      }
-      
-      toast({
-        title: 'Estado restaurado',
-        description: 'O sorteio em andamento foi retomado.',
-      });
-    } else {
-      // Nenhum sorteio em andamento: limpar qualquer estado antigo persistido
-      clearSorteioState();
-    }
   }, []);
 
   useEffect(() => {
@@ -453,16 +331,6 @@ const Sorteio = () => {
   };
 
   const realizarSorteio = async () => {
-    // Impedir novo sorteio se já houver um ganhador aguardando confirmação
-    if (currentWinnerId) {
-      toast({
-        title: 'Sorteio em andamento',
-        description: 'Finalize o sorteado atual (Confirmar ou Não confirmado) antes de iniciar um novo sorteio.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     if (participantes.length === 0) {
       toast({
         title: 'Nenhum participante disponível',
@@ -584,12 +452,6 @@ const Sorteio = () => {
 
       if (error) throw error;
 
-      // Marcar o prêmio atual como "Em validação" para que não apareça como disponível em novos sorteios
-      await supabase
-        .from('premios')
-        .update({ status: 'Em validação' })
-        .eq('id', proximoPremio.id);
-
       // Atualizar listas
       const novosExcluidos = new Set(excludedIds);
       novosExcluidos.add(vencedor.id);
@@ -648,8 +510,6 @@ const Sorteio = () => {
     setAguardandoProximo(false);
     setShowCountdown(false);
     setCurrentWinnerId(null);
-    setCountdownStartTimestamp(null);
-    clearSorteioState(); // Limpar estado persistido
     
     toast({
       title: 'Sequência cancelada',
@@ -665,8 +525,6 @@ const Sorteio = () => {
     setAguardandoProximo(false);
     setShowCountdown(false);
     setCurrentWinnerId(null);
-    setCountdownStartTimestamp(null);
-    clearSorteioState(); // Limpar estado persistido
     
     if (sequenciaVencedores.length > 0) {
       setWinners(sequenciaVencedores);
@@ -727,14 +585,6 @@ const Sorteio = () => {
 
       if (error) throw error;
 
-      // Se estiver em modo com prêmios, marcar o prêmio atual como "Em validação"
-      if (sorteioComPremios && proximoPremio) {
-        await supabase
-          .from('premios')
-          .update({ status: 'Em validação' })
-          .eq('id', proximoPremio.id);
-      }
-
       // Preparar winners com informações do prêmio
       const winnersComPremio = vencedores.map(w => ({
         ...w,
@@ -777,23 +627,11 @@ const Sorteio = () => {
   };
 
   const novoSorteio = () => {
-    // Impedir novo sorteio se ainda houver um ganhador aguardando confirmação
-    if (currentWinnerId) {
-      toast({
-        title: 'Sorteio em andamento',
-        description: 'Finalize o sorteado atual (Confirmar ou Não confirmado) antes de iniciar um novo sorteio.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setShowWinners(false);
     setWinners([]);
     setNumVencedores(1);
     setShowCountdown(false);
     setCurrentWinnerId(null);
-    setCountdownStartTimestamp(null);
-    clearSorteioState(); // Limpar estado persistido
     
     // Resetar estados da sequência
     setEmSequencia(false);
@@ -844,8 +682,6 @@ const Sorteio = () => {
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
-      setCountdownStartTimestamp(null);
-      clearSorteioState(); // Limpar estado persistido
 
       // Se estiver em sequência, aguardar próximo sorteio
       if (emSequencia) {
@@ -920,8 +756,6 @@ const Sorteio = () => {
 
       setShowCountdown(false);
       setCurrentWinnerId(null);
-      setCountdownStartTimestamp(null);
-      clearSorteioState(); // Limpar estado persistido
 
       // Se estiver em sequência, substituir o último vencedor pelo item "sem vencedor"
       if (emSequencia && sorteado.premio_id) {
@@ -993,10 +827,6 @@ const Sorteio = () => {
       setWinners([]);
       setNumVencedores(1);
       setExcludedIds(new Set());
-      setShowCountdown(false);
-      setCurrentWinnerId(null);
-      setCountdownStartTimestamp(null);
-      clearSorteioState(); // Limpar estado persistido
       try { localStorage.removeItem(EXCLUDED_STORAGE_KEY); } catch {}
       
       // Recarregar participantes da base oficial
@@ -1101,7 +931,6 @@ const Sorteio = () => {
           onConfirm={handleConfirmWinner}
           onReject={handleRejectWinner}
           winnerName={winners.find(w => w.id === currentWinnerId)?.nome || ''}
-          startTimestamp={countdownStartTimestamp}
         />
       )}
 
@@ -1348,24 +1177,6 @@ const Sorteio = () => {
                     if (!showCountdown && !currentWinnerId) {
                       setCurrentWinnerId(winner.id);
                       setShowCountdown(true);
-                      const startTimestamp = Date.now();
-                      setCountdownStartTimestamp(startTimestamp);
-                      
-                      // Persistir estado do sorteio
-                      if (ativarContadorTempo) {
-                        persistSorteioState({
-                          currentWinnerId: winner.id,
-                          winners,
-                          showCountdown: true,
-                          countdownStartTimestamp: startTimestamp,
-                          countdownDuration,
-                          emSequencia,
-                          sequenciaTotal,
-                          sequenciaAtual,
-                          sequenciaVencedores,
-                          proximoPremio,
-                        });
-                      }
                     }
                   }}
                 />
@@ -1373,16 +1184,14 @@ const Sorteio = () => {
             </div>
 
             <div className="flex justify-center">
-              {!currentWinnerId && (
-                <Button
-                  onClick={novoSorteio}
-                  size="lg"
-                  className="gap-2"
-                >
-                  <Sparkles className="h-5 w-5" />
-                  Novo Sorteio
-                </Button>
-              )}
+              <Button
+                onClick={novoSorteio}
+                size="lg"
+                className="gap-2"
+              >
+                <Sparkles className="h-5 w-5" />
+                Novo Sorteio
+              </Button>
             </div>
           </div>
         )}
