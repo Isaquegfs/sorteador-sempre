@@ -958,19 +958,26 @@ export default function Premios() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-20">Ordem</TableHead>
                       <TableHead>Nome do Prêmio</TableHead>
                       <TableHead>Descrição</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Data do Sorteio</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {premiosSorteados.map((premio: any) => (
                       <TableRow key={premio.id}>
-                        <TableCell className="font-medium">{premio.ordem_original}</TableCell>
                         <TableCell className="font-medium">{premio.nome}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {premio.descricao || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="default"
+                            className="bg-[hsl(17,86%,58%)] hover:bg-[hsl(17,86%,58%)]/90"
+                          >
+                            Sorteado
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {new Date(premio.sorteado_em).toLocaleString('pt-BR', {

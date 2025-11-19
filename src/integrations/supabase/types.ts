@@ -192,7 +192,6 @@ export type Database = {
           id: string
           is_test: boolean
           nome: string
-          ordem_original: number
           premio_id: string
           sorteado_em: string
         }
@@ -202,7 +201,6 @@ export type Database = {
           id?: string
           is_test?: boolean
           nome: string
-          ordem_original: number
           premio_id: string
           sorteado_em?: string
         }
@@ -212,7 +210,6 @@ export type Database = {
           id?: string
           is_test?: boolean
           nome?: string
-          ordem_original?: number
           premio_id?: string
           sorteado_em?: string
         }
