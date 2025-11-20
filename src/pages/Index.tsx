@@ -76,44 +76,40 @@ const Index = () => {
 
     setIsLoading(true);
     
-    let clientIP = 'unknown';
-    
-    // Check rate limit before proceeding (strict mode - fail if check fails)
-    const { data: rateLimitCheck, error: rateLimitError } = await supabase.functions.invoke('check-rate-limit', {
-      body: {} // Edge function extracts IP from request headers
-    });
-
-    if (rateLimitError) {
-      console.error('Rate limit check failed:', rateLimitError);
-      toast({
-        title: "Erro no sistema",
-        description: "Não foi possível verificar o limite de cadastros. Por favor, tente novamente em alguns instantes.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (!rateLimitCheck?.allowed) {
-      toast({
-        title: "Limite excedido",
-        description: rateLimitCheck?.message || "Você atingiu o limite de cadastros. Por favor, tente novamente mais tarde.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-    
-    // Use the IP returned from the rate limit check
-    if (rateLimitCheck?.ip) {
-      clientIP = rateLimitCheck.ip;
-    }
-    
     try {
+      // Calculate CPF hash first
       const cpfHash = await hashCPF(formData.cpf);
       const cpfCensurado = censorCPF(formData.cpf);
+      
+      // Check rate limit by CPF BEFORE checking eligibility
+      const { data: rateLimitCheck, error: rateLimitError } = await supabase.functions.invoke('check-rate-limit', {
+        body: { cpf_hash: cpfHash }
+      });
 
-      // Verificar elegibilidade usando função segura
+      if (rateLimitError) {
+        console.error('Rate limit check failed:', rateLimitError);
+        toast({
+          title: "Erro no sistema",
+          description: "Não foi possível verificar o limite de cadastros. Por favor, tente novamente em alguns instantes.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!rateLimitCheck?.allowed) {
+        toast({
+          title: "Limite de tentativas excedido",
+          description: rateLimitCheck?.message || "Você já tentou se cadastrar recentemente. Aguarde alguns minutos e tente novamente.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log(`Rate limit check passed: ${rateLimitCheck.count}/${rateLimitCheck.limit} attempts used`);
+
+      // Check eligibility AFTER rate limit
       const { data: isElegivel, error: elegError } = await supabase
         .rpc('is_cpf_elegivel', { cpf_hash_input: cpfHash });
 
@@ -179,7 +175,7 @@ const Index = () => {
 
       const { setor, cidade } = dadosBase[0];
 
-      // Inserir participante with IP from rate limit check
+      // Insert participant (IP will be captured by trigger if available)
       const { error } = await supabase
         .from('participantes')
         .insert({
@@ -190,7 +186,6 @@ const Index = () => {
           cpf_hash: cpfHash,
           cpf_censurado: cpfCensurado,
           is_test: isTestMode,
-          ip: clientIP,
         });
 
       if (error) throw error;
@@ -335,17 +330,7 @@ const Index = () => {
               aria-hidden="true"
             />
 
-            {/* Privacy Notice */}
-            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md border">
-              <p>
-                🔒 <strong>Privacidade:</strong> Coletamos seu endereço IP para prevenir cadastros 
-                fraudulentos e proteger a integridade do sorteio. Os dados são mantidos por 90 dias 
-                e não são compartilhados com terceiros. Ao prosseguir, você concorda com esta coleta 
-                conforme a LGPD.
-              </p>
-            </div>
-
-            <Button 
+            <Button
               type="submit" 
               className="w-full"
               disabled={isLoading}
