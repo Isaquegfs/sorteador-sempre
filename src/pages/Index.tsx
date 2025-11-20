@@ -40,6 +40,19 @@ const Index = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check honeypot field (anti-bot protection)
+    const formElement = e.target as HTMLFormElement;
+    const honeypotValue = (formElement.elements.namedItem('website') as HTMLInputElement)?.value;
+    if (honeypotValue) {
+      console.log('[Security] Bot submission blocked - honeypot triggered');
+      toast({
+        title: "Erro na validação",
+        description: "Por favor, tente novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Validar dados do formulário
     const validation = participanteSchema.safeParse(formData);
     if (!validation.success) {
@@ -310,6 +323,26 @@ const Index = () => {
                 placeholder="12345678900"
                 maxLength={11}
               />
+            </div>
+
+            {/* Honeypot field - hidden from users but visible to bots */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
+              aria-hidden="true"
+            />
+
+            {/* Privacy Notice */}
+            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md border">
+              <p>
+                🔒 <strong>Privacidade:</strong> Coletamos seu endereço IP para prevenir cadastros 
+                fraudulentos e proteger a integridade do sorteio. Os dados são mantidos por 90 dias 
+                e não são compartilhados com terceiros. Ao prosseguir, você concorda com esta coleta 
+                conforme a LGPD.
+              </p>
             </div>
 
             <Button 
