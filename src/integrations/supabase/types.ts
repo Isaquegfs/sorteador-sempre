@@ -472,6 +472,8 @@ export type Database = {
       }
       is_cpf_elegivel: { Args: { cpf_hash_input: string }; Returns: boolean }
       is_form_open: { Args: never; Returns: boolean }
+      validate_cpf_format: { Args: { cpf_input: string }; Returns: boolean }
+      validate_cpf_hash: { Args: { hash: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator"
