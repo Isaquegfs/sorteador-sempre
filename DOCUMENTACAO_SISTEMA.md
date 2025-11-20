@@ -1,6 +1,22 @@
 # Documentação do Sistema de Sorteios Sempre
 
-## Versão 1.0 | Atualizado em: Novembro 2025
+## Versão 1.1 | Atualizado em: Novembro 2025
+
+### Histórico de Alterações
+
+**Versão 1.1 (Novembro 2025)**
+- ✅ **Rate Limiting por CPF**: Sistema agora limita tentativas por CPF hash ao invés de IP
+  - Permite múltiplos usuários do mesmo IP corporativo se cadastrarem
+  - 3 tentativas por CPF por hora (inclui tentativas inválidas)
+  - Previne força bruta para descoberta de CPFs elegíveis
+- ✅ **Ordem de Validação Ajustada**: Rate limit verificado ANTES da elegibilidade
+- ✅ **Privacidade Aprimorada**: Remoção da coleta ativa de IP para bloqueios
+  - IP ainda registrado passivamente para auditoria
+  - Sem necessidade de consentimento explícito LGPD para bloqueios
+
+**Versão 1.0 (Novembro 2025)**
+- Release inicial do sistema
+- Todas as funcionalidades base implementadas
 
 ---
 
@@ -132,7 +148,7 @@ Tabelas principais:
 12. `historico_acoes` - Log de ações administrativas
 
 **Edge Functions:**
-1. `check-rate-limit` - Verifica limite de submissões por IP
+1. `check-rate-limit` - Verifica limite de tentativas por CPF (3 tentativas/hora)
 2. `check-form-schedule` - Verifica agendamento de fechamento
 3. `create-user` - Criação de novos usuários admin/moderador
 
@@ -226,21 +242,28 @@ sequenceDiagram
     U->>F: Preenche formulário
     F->>F: Validação client-side
     F->>F: Verifica honeypot
-    F->>RL: check-rate-limit (IP)
-    RL->>DB: Consulta submissões
-    DB-->>RL: Contagem
-    alt Limite excedido
+    F->>F: Calcula hash SHA-256 do CPF
+    F->>RL: check-rate-limit (cpf_hash)
+    RL->>DB: Consulta tentativas por CPF
+    DB-->>RL: Contagem de tentativas
+    alt 3+ tentativas na última hora
         RL-->>F: 429 Too Many Requests
-        F-->>U: Erro: Limite atingido
-    else Permitido
-        RL-->>F: 200 OK
-        F->>DB: Validação server-side CPF
-        DB-->>F: CPF válido
-        F->>BO: Verifica elegibilidade
-        BO-->>F: Dados (setor, cidade)
-        F->>DB: Insert participante
-        DB-->>F: Sucesso
-        F-->>U: Cadastro confirmado
+        F-->>U: Erro: Limite excedido
+    else Menos de 3 tentativas
+        RL-->>F: 200 OK (permitido)
+        F->>BO: Verifica elegibilidade (is_cpf_elegivel)
+        alt CPF não está na base
+            BO-->>F: Não elegível
+            F-->>U: Erro: CPF não encontrado
+            Note over F,DB: Tentativa conta no rate limit
+        else CPF elegível
+            BO-->>F: CPF encontrado
+            F->>BO: Busca dados (setor, cidade)
+            BO-->>F: Dados complementares
+            F->>DB: Insert participante
+            DB-->>F: Sucesso
+            F-->>U: Cadastro confirmado
+        end
     end
 ```
 
@@ -306,8 +329,8 @@ Formulário público acessível em `/` que permite aos participantes se inscreve
 **Server-side:**
 - Validação matemática completa de CPF (dígitos verificadores)
 - Validação de hash SHA-256 do CPF
+- Rate limiting por CPF (3 tentativas por hora - verificado ANTES da elegibilidade)
 - Verificação de elegibilidade na base oficial
-- Rate limiting (3 submissões por hora por IP)
 - Proteção anti-bot (honeypot field)
 
 ### Fluxo de Cadastro
@@ -321,25 +344,26 @@ flowchart TD
     E -->|Erro| F[Exibe erros]
     E -->|OK| G[Verifica honeypot]
     G -->|Bot detectado| H[Bloqueia submissão]
-    G -->|OK| I[Check rate limit]
-    I -->|Limite excedido| J[Erro: Muitas tentativas]
-    I -->|OK| K[Valida CPF server-side]
-    K -->|CPF inválido| L[Erro: CPF inválido]
-    K -->|CPF válido| M{CPF na base oficial?}
-    M -->|Não| N[Erro: CPF não elegível]
-    M -->|Sim| O[Busca setor e cidade]
-    O --> P[Salva participante]
-    P --> Q[Sucesso: Cadastro confirmado]
+    G -->|OK| I[Valida CPF formato]
+    I -->|CPF inválido| J[Erro: CPF inválido]
+    I -->|CPF válido| K[Calcula hash CPF]
+    K --> L[Check rate limit por CPF]
+    L -->|3+ tentativas na última hora| M[Erro: Limite excedido]
+    L -->|Permitido| N{CPF na base oficial?}
+    N -->|Não| O[Erro: CPF não elegível<br/>Conta no rate limit]
+    N -->|Sim| P[Busca setor e cidade]
+    P --> Q[Salva participante]
+    Q --> R[Sucesso: Cadastro confirmado]
 ```
 
 ### Segurança
 - Criptografia de CPF com SHA-256
 - Armazenamento apenas do hash (não reversível)
 - CPF censurado para exibição (***.***.***-XX)
-- Rate limiting por IP
+- Rate limiting por CPF hash (3 tentativas/hora)
 - Honeypot para detectar bots
 - Validação dupla (client + server)
-- Consentimento de coleta de IP (LGPD)
+- Tentativas com CPF inválido contam no rate limit (proteção contra força bruta)
 
 ## 3.2 Base Oficial de Participantes
 
@@ -887,7 +911,7 @@ flowchart LR
 **Validações Automáticas:**
 - CPF deve estar na base oficial
 - CPF matematicamente válido
-- Rate limit: máx 3 submissões/hora por IP
+- Rate limit: máx 3 tentativas/hora por CPF
 - Honeypot para detectar bots
 - E-mail formato válido
 
@@ -1163,15 +1187,20 @@ CREATE TABLE participantes (
   cpf_censurado TEXT NOT NULL,
   setor TEXT NOT NULL,
   cidade TEXT NOT NULL,
-  ip TEXT,
+  ip TEXT,  -- Coletado passivamente para auditoria, não usado para bloqueios
   is_test BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE UNIQUE INDEX idx_participantes_cpf ON participantes(cpf_hash, is_test);
 CREATE INDEX idx_participantes_test ON participantes(is_test);
-CREATE INDEX idx_participantes_ip ON participantes(ip);
+CREATE INDEX idx_participantes_ip ON participantes(ip);  -- Mantido para consultas de auditoria
 ```
+
+**Observações:**
+- Coluna `ip` é preenchida por trigger mas NÃO é usada para rate limiting
+- Rate limiting é feito por `cpf_hash` (3 tentativas/hora)
+- IP mantido apenas para fins de auditoria e análise posterior
 
 #### base_oficial
 ```sql
@@ -1308,16 +1337,49 @@ EXECUTE FUNCTION update_updated_at_column();
 
 **Arquivo:** `supabase/functions/check-rate-limit/index.ts`
 
-**Propósito:** Verificar limite de submissões por IP
+**Propósito:** Verificar limite de tentativas de cadastro por CPF (3 tentativas/hora)
 
 **Funcionamento:**
 ```typescript
-1. Recebe IP do cliente (x-real-ip header)
-2. Consulta participantes da última hora com esse IP
-3. Conta submissões
-4. Se > 3: retorna 429 Too Many Requests
-5. Se <= 3: retorna 200 OK
+1. Recebe cpf_hash no body da requisição
+2. Valida presença do cpf_hash
+3. Consulta participantes da última hora com esse cpf_hash
+4. Conta tentativas de cadastro
+5. Se >= 3: retorna 429 Too Many Requests
+6. Se < 3: retorna 200 OK com contagem atual
 ```
+
+**Request:**
+```json
+{
+  "cpf_hash": "a1b2c3...64-char-sha256-hash"
+}
+```
+
+**Response (Permitido):**
+```json
+{
+  "allowed": true,
+  "count": 1,
+  "limit": 3
+}
+```
+
+**Response (Bloqueado):**
+```json
+{
+  "allowed": false,
+  "count": 3,
+  "limit": 3,
+  "message": "Você já tentou se cadastrar recentemente com este CPF..."
+}
+```
+
+**Segurança:**
+- Tentativas com CPF inválido/não elegível CONTAM no limite
+- Previne força bruta para descobrir CPFs elegíveis
+- Não expõe informações sobre validade do CPF
+- Rate limit aplicado ANTES da verificação de elegibilidade
 
 **Configuração:**
 ```toml
@@ -1417,8 +1479,9 @@ USING (
 - Unicidade: previne duplicatas
 
 **Rate Limiting:**
-- IP tracking
-- 3 submissões/hora
+- CPF hash tracking (não IP)
+- 3 tentativas por CPF por hora
+- Verificado ANTES da elegibilidade
 - Edge function independente
 - Honeypot para bots
 
@@ -1429,10 +1492,10 @@ USING (
 - Roles verificados em tempo real
 
 **LGPD:**
-- Consentimento de coleta de IP
-- CPF armazenado apenas como hash
-- Exibição censurada
+- CPF armazenado apenas como hash SHA-256 (não reversível)
+- Exibição censurada (***.***.***-XX)
 - Transparência no uso dos dados
+- IP coletado passivamente apenas para auditoria (não usado para bloqueios)
 
 ---
 
@@ -1669,8 +1732,8 @@ VALUES ('uuid_do_usuario', 'admin');
 - Contate o organizador
 
 ❌ **"Limite de tentativas excedido"**
-- Muitas tentativas do mesmo IP
-- Aguarde 1 hora e tente novamente
+- Você já tentou se cadastrar 3 vezes com este CPF na última hora
+- Aguarde alguns minutos e tente novamente
 
 ❌ **"CPF inválido"**
 - CPF informado é matematicamente inválido
@@ -1680,8 +1743,9 @@ VALUES ('uuid_do_usuario', 'admin');
 
 - Seu CPF é criptografado (SHA-256)
 - Apenas hash é armazenado (não reversível)
-- IP é coletado para prevenir fraudes (consentimento ao enviar)
+- CPF é usado para controle de tentativas de cadastro (3 por hora)
 - Dados não são compartilhados com terceiros
+- Sistema protege contra tentativas de força bruta
 
 ## 7.2 Para Administradores
 
@@ -2359,24 +2423,41 @@ WHERE user_id = 'user_id_aqui';
 
 ### "Limite de tentativas excedido"
 
-**Problema:** Rate limit bloqueando submissão
+**Problema:** Rate limit bloqueando submissão do mesmo CPF
 
-**Causa:** Mais de 3 tentativas do mesmo IP em 1 hora
+**Causa:** Mais de 3 tentativas com o mesmo CPF em 1 hora
+
+**Por que isso acontece:**
+- Rate limit é por CPF hash, não por IP
+- Tentativas com CPF inválido/não elegível CONTAM no limite
+- Protege contra força bruta para descobrir CPFs elegíveis
 
 **Soluções:**
 
-1. **Aguardar 1 hora**
+1. **Aguardar 1 hora (recomendado)**
+   - Limite reseta automaticamente após 1 hora
+   - Não requer intervenção administrativa
 
-2. **Limpar registros de IP (admin):**
+2. **Limpar registros do CPF (admin):**
    ```sql
+   -- Ver tentativas recentes
+   SELECT created_at, cpf_censurado 
+   FROM participantes
+   WHERE cpf_hash = 'hash_do_cpf'
+   AND created_at > now() - interval '1 hour';
+   
+   -- Limpar se necessário
    DELETE FROM participantes
-   WHERE ip = 'ip_bloqueado'
-   AND created_at < now() - interval '1 hour';
+   WHERE cpf_hash = 'hash_do_cpf'
+   AND created_at > now() - interval '1 hour';
    ```
 
 3. **Ajustar limite (permanente):**
-   - Editar `check-rate-limit/index.ts`
-   - Alterar `RATE_LIMIT` e `TIME_WINDOW`
+   - Editar `supabase/functions/check-rate-limit/index.ts`
+   - Alterar `maxSubmissionsPerHour` (padrão: 3)
+   - Redeploy automático
+
+**Nota:** Não é recomendado aumentar o limite pois isso reduz proteção contra ataques de força bruta.
 
 ### "Erro na validação" (honeypot)
 
@@ -2852,7 +2933,7 @@ DELETE FROM base_oficial WHERE is_test = true;
 ## R
 
 **Rate Limiting**
-- Limitação de taxa que restringe o número de submissões permitidas por IP em um período de tempo (3 por hora).
+- Limitação de taxa que restringe o número de tentativas de cadastro permitidas por CPF em um período de tempo (3 tentativas por hora). Tentativas com CPF inválido ou não elegível também contam no limite, prevenindo ataques de força bruta.
 
 **RLS (Row Level Security)**
 - Segurança a nível de linha no PostgreSQL que controla acesso aos dados baseado em políticas e roles do usuário.
@@ -3065,4 +3146,4 @@ Para suporte técnico ou dúvidas sobre o sistema:
 
 *Este documento deve ser atualizado sempre que houver mudanças significativas no sistema.*
 
-*Versão 1.0 | Novembro 2025*
+*Versão 1.1 | Novembro 2025*
