@@ -22,20 +22,26 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Extract client IP from request headers
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown'
+    // Extract CPF hash from request body
+    const { cpf_hash } = await req.json()
 
-    console.log('Checking rate limit for IP:', clientIP)
+    if (!cpf_hash) {
+      console.error('Missing cpf_hash in request body')
+      return new Response(
+        JSON.stringify({ error: 'CPF hash is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    // Check submissions from this IP in the last hour
+    console.log('Checking rate limit for CPF hash:', cpf_hash.substring(0, 8) + '...')
+
+    // Check submissions from this CPF in the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     
     const { data: recentSubmissions, error } = await supabaseClient
       .from('participantes')
       .select('id, created_at')
-      .eq('ip', clientIP)
+      .eq('cpf_hash', cpf_hash)
       .gte('created_at', oneHourAgo)
 
     if (error) {
@@ -47,26 +53,27 @@ Deno.serve(async (req) => {
     }
 
     const submissionCount = recentSubmissions?.length || 0
-    const maxSubmissionsPerHour = 3 // Limit to 3 submissions per hour per IP
+    const maxSubmissionsPerHour = 3 // Limit to 3 submissions per hour per CPF
 
     if (submissionCount >= maxSubmissionsPerHour) {
+      console.log(`Rate limit exceeded for CPF hash: ${submissionCount}/${maxSubmissionsPerHour} attempts`)
       return new Response(
         JSON.stringify({ 
           allowed: false,
           count: submissionCount,
           limit: maxSubmissionsPerHour,
-          message: 'Rate limit exceeded. Please try again later.'
+          message: 'Você já tentou se cadastrar recentemente com este CPF. Aguarde alguns minutos e tente novamente.'
         }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log(`Rate limit OK: ${submissionCount}/${maxSubmissionsPerHour} attempts`)
     return new Response(
       JSON.stringify({ 
         allowed: true,
         count: submissionCount,
-        limit: maxSubmissionsPerHour,
-        ip: clientIP // Return IP for debugging
+        limit: maxSubmissionsPerHour
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
